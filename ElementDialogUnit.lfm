@@ -1,0 +1,191 @@
+object ElementDialogForm: TElementDialogForm
+  Left = 500
+  Height = 420
+  Top = 220
+  Width = 560
+  BorderStyle = bsDialog
+  Caption = 'Element anlegen'
+  ClientHeight = 420
+  ClientWidth = 560
+  Color = clBtnFace
+  Position = poScreenCenter
+  LCLVersion = '4.99.0.0'
+  object HeaderLabel: TLabel
+    Left = 16
+    Height = 24
+    Top = 16
+    Width = 130
+    Caption = 'Element anlegen'
+    Font.Height = -19
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
+  object StepLabel: TLabel
+    Left = 16
+    Height = 15
+    Top = 50
+    Width = 0
+  end
+  object PageControl: TPageControl
+    Left = 0
+    Height = 340
+    Top = 76
+    Width = 560
+    ActivePage = TypePage
+    Align = alBottom
+    ShowTabs = False
+    TabIndex = 0
+    TabOrder = 0
+    object TypePage: TTabSheet
+      Caption = 'Typ'
+      object TypeGroup: TRadioGroup
+        Left = 16
+        Height = 104
+        Top = 16
+        Width = 520
+        Caption = 'Was möchtest du anlegen?'
+        ItemIndex = 0
+        Items.Strings = (
+          'Kapitel'
+          'Trenner'
+        )
+        OnClick = TypeChanged
+        TabOrder = 0
+      end
+      object TypeHintLabel: TLabel
+        Left = 16
+        Height = 60
+        Top = 136
+        Width = 520
+        AutoSize = False
+        Caption = 'Wähle zuerst, ob du ein Kapitel oder einen Trenner anlegen willst.'
+        WordWrap = True
+      end
+    end
+    object DetailsPage: TTabSheet
+      Caption = 'Details'
+      object TitleLabel: TLabel
+        Left = 16
+        Height = 15
+        Top = 16
+        Width = 86
+        Caption = 'Titel des Kapitels'
+      end
+      object TitleEdit: TEdit
+        Left = 16
+        Height = 23
+        Top = 38
+        Width = 520
+        OnChange = TitleChanged
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 0
+      end
+      object SourceGroup: TRadioGroup
+        Left = 16
+        Height = 82
+        Top = 72
+        Width = 520
+        Caption = 'DOCX-Quelle'
+        ItemIndex = 0
+        Items.Strings = (
+          'Neues DOCX anlegen'
+          'Vorhandenes DOCX importieren'
+        )
+        OnClick = SourceChanged
+        TabOrder = 1
+      end
+      object ImportLabel: TLabel
+        Left = 16
+        Height = 15
+        Top = 164
+        Width = 59
+        Caption = 'DOCX-Datei'
+      end
+      object ImportRow: TPanel
+        Left = 16
+        Height = 40
+        Top = 186
+        Width = 520
+        BevelOuter = bvNone
+        TabOrder = 2
+        object ImportEdit: TEdit
+          Left = 0
+          Height = 23
+          Top = 0
+          Width = 410
+          Align = alLeft
+          ParentShowHint = False
+          ShowHint = True
+          TabOrder = 0
+        end
+        object BrowseButton: TButton
+          Left = 410
+          Height = 25
+          Top = 0
+          Width = 110
+          Align = alRight
+          Caption = 'Durchsuchen'
+          OnClick = BrowseClick
+          TabOrder = 1
+        end
+      end
+      object HintLabel: TLabel
+        Left = 16
+        Height = 42
+        Top = 236
+        Width = 520
+        AutoSize = False
+        WordWrap = True
+      end
+      object ErrorLabel: TLabel
+        Left = 16
+        Height = 40
+        Top = 286
+        Width = 520
+        AutoSize = False
+        Font.Color = clMaroon
+        ParentColor = False
+        ParentFont = False
+        WordWrap = True
+      end
+    end
+  end
+  object ButtonPanel: TPanel
+    Left = 0
+    Height = 60
+    Top = 360
+    Width = 560
+    Align = alBottom
+    BevelOuter = bvNone
+    TabOrder = 1
+    object BackButton: TButton
+      Left = 240
+      Height = 30
+      Top = 14
+      Width = 90
+      Caption = 'Zurück'
+      OnClick = BackClick
+      TabOrder = 0
+    end
+    object NextButton: TButton
+      Left = 340
+      Height = 30
+      Top = 14
+      Width = 90
+      Caption = 'Weiter'
+      OnClick = NextClick
+      TabOrder = 1
+    end
+    object CancelButton: TButton
+      Left = 440
+      Height = 30
+      Top = 14
+      Width = 90
+      Caption = 'Abbrechen'
+      ModalResult = 2
+      TabOrder = 2
+    end
+  end
+end

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectOptions>
+    <Version Value="12"/>
+    <General>
+      <MainUnit Value="0"/>
+      <Title Value="Structura"/>
+      <Scaled Value="True"/>
+      <UseAppBundle Value="False"/>
+      <ResourceType Value="res"/>
+    </General>
+    <Units Count="9">
+      <Unit0>
+        <Filename Value="Structura.lpr"/>
+        <IsPartOfProject Value="True"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="MainFormUnit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="MainForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="MainFormUnit"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="StructuraTypes.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="StructuraTypes"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="ProjectStore.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ProjectStore"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="DocxPreview.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="DocxPreview"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="DocumentWorkflow.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="DocumentWorkflow"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="ProjectDialogUnit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="ProjectDialogForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="ProjectDialogUnit"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="ElementDialogUnit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="ElementDialogForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="ElementDialogUnit"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="OfficeDetection.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="OfficeDetection"/>
+      </Unit8>
+    </Units>
+    <RequiredPackages Count="1">
+      <Item1>
+        <PackageName Value="LCL"/>
+      </Item1>
+    </RequiredPackages>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <PathDelim Value="\"/>
+      <Win32Gui Value="True"/>
+      <Target>
+        <Filename Value="Structura"/>
+      </Target>
+      <SearchPaths>
+        <IncludeFiles Value="$(ProjOutDir)"/>
+        <OtherUnitFiles Value="."/>
+      </SearchPaths>
+      <Parsing>
+        <SyntaxOptions>
+          <UseAnsiStrings Value="False"/>
+        </SyntaxOptions>
+      </Parsing>
+    </CompilerOptions>
+  </ProjectOptions>
+</CONFIG>

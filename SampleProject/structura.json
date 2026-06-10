@@ -1,0 +1,25 @@
+{
+  "title" : "Neues Buch",
+  "author" : "",
+  "subtitle" : "",
+  "coverImage" : "",
+  "projectNotes" : "notes\\project.md",
+  "items" : [
+    {
+      "id" : "part20260610212026303",
+      "type" : "divider",
+      "title" : "Teil I",
+      "fileName" : "",
+      "notesFileName" : "",
+      "status" : ""
+    },
+    {
+      "id" : "k20260610212026303",
+      "type" : "chapter",
+      "title" : "Einleitung",
+      "fileName" : "chapters\\Einleitung.docx",
+      "notesFileName" : "notes\\k20260610212026303.md",
+      "status" : "Rohfassung"
+    }
+  ]
+}
