@@ -19,6 +19,7 @@ type
   end;
 
   TProjectDialogForm = class(TForm)
+  published
     AuthorEdit: TEdit;
     CancelButton: TButton;
     CoverBrowseButton: TButton;

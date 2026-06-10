@@ -22,6 +22,7 @@ type
   end;
 
   TElementDialogForm = class(TForm)
+  published
     BackButton: TButton;
     BrowseButton: TButton;
     ButtonPanel: TPanel;
