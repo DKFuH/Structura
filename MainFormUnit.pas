@@ -174,7 +174,7 @@ implementation
 uses
   LCLIntf, LCLType, FileUtil, Process, Clipbrd, StrUtils, Math,
   ProjectStore, ProjectDialogUnit, ElementDialogUnit, DocumentWorkflow,
-  DocxPreview, SettingsStore, SettingsDialogUnit;
+  DocxPreview, SettingsStore, SettingsDialogUnit, FirstRunWizardUnit;
 
 function NormalizeStoredPathForCompare(const APath: string): string;
 begin
@@ -432,8 +432,11 @@ begin
 end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
+var
+  IsFirstRun: Boolean;
 begin
   FSelectedIndex := -1;
+  IsFirstRun := not FileExists(TSettingsStore.SettingsFileName);
   FSettings := TSettingsStore.Load;
   FOfficeTargets := DetectOfficeTargets;
   SyncDetectedTargetsToSettings;
@@ -448,6 +451,17 @@ begin
   RefreshWorkflowButtons;
   SelectProjectOverview;
   UpdateStatus('Bereit. Bitte ein Projekt anlegen oder öffnen.');
+
+  // First-Run-Wizard beim allerersten Start
+  if IsFirstRun then
+  begin
+    if RunFirstRunWizard(Self, FSettings) then
+    begin
+      TSettingsStore.Save(FSettings);
+      // Kacheln neu aufbauen falls ein Projektordner gesetzt wurde
+      SelectProjectOverview;
+    end;
+  end;
 end;
 
 destructor TMainForm.Destroy;

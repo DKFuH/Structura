@@ -116,6 +116,12 @@
         <IsVisibleTab Value="True"/>
         <UsageCount Value="21"/>
       </Unit>
+      <Unit>
+        <Filename Value="FirstRunWizardUnit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <UsageCount Value="1"/>
+      </Unit>
     </Units>
     <JumpHistory HistoryIndex="-1"/>
   </ProjectOptions>
