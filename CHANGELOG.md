@@ -7,13 +7,19 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
-## [Unreleased] — 0.1.1
+## [0.1.1] — 2026-06-11
+
+### Added
+
+- ROADMAP.md with planned milestones and explicit non-goals
+- German README (README.de.md)
 
 ### Changed
 
-- README tagline updated to reflect the actual user promise
-- ROADMAP.md added for public visibility of direction
-- German README (README.de.md) added
+- README tagline rewritten to focus on the author's actual workflow
+- New project dialog redesigned: root folder (Hauptordner) and project subfolder (Unterordner) are now separate fields — the subfolder name is generated automatically from the project title
+- Warning shown when creating a project in a folder that already contains a `structura.json`
+- After creating a project, the root folder is remembered (not the new project's subfolder)
 
 ---
 
