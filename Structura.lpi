@@ -111,12 +111,12 @@
       <Unit>
         <Filename Value="ImportProjectDialogUnit.pas"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="1"/>
+        <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="../../lazarus/lcl/include/control.inc"/>
         <IsVisibleTab Value="True"/>
-        <TopLine Value="2829"/>
+        <TopLine Value="2830"/>
         <CursorPos Y="2846"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>

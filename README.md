@@ -1,5 +1,7 @@
 # Structura
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Structura is a local Windows desktop application for organizing non-fiction book projects as chapter-based folders on disk. It is built with Free Pascal and Lazarus and intentionally focuses on project structure, notes, preview, and export workflows instead of becoming a DOCX editor.
 
 ## Release status
@@ -131,6 +133,6 @@ See `.gitignore` for the expected ignore rules.
 
 ## License
 
-Structura is licensed under the Mozilla Public License 2.0 (`MPL-2.0`).
+Structura is licensed under the MIT License.
 
 See [LICENSE](LICENSE) for the full license text.

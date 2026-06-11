@@ -1,0 +1,49 @@
+name: Build and Release
+
+# Runs when you push a version tag, e.g.: git tag v0.1.0 && git push origin v0.1.0
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install Lazarus
+        uses: gcarreno/setup-lazarus@v3
+        with:
+          lazarus-version: "stable"
+
+      - name: Build Structura (Release)
+        shell: cmd
+        run: |
+          lazbuild --build-mode=default --no-write-project structura.lpi
+
+      - name: Package release ZIP
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}"
+          $outDir  = "release"
+          New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+          Copy-Item "Structura.exe" "$outDir\Structura.exe"
+          Copy-Item "README.md"    "$outDir\README.md"
+          Copy-Item "LICENSE"      "$outDir\LICENSE"
+          $zipName = "Structura-$version-windows-x64.zip"
+          Compress-Archive -Path "$outDir\*" -DestinationPath $zipName
+          echo "ZIP_NAME=$zipName" >> $env:GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Structura ${{ github.ref_name }}"
+          body_path: CHANGELOG.md
+          files: ${{ env.ZIP_NAME }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

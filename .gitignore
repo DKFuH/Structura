@@ -22,6 +22,14 @@
 *.bak
 backup/
 
+# Lazarus debug/test forms generated at runtime
+debug_forms.*
+
 # OS / editor noise
 Thumbs.db
 .DS_Store
+desktop.ini
+
+# Release build output (created locally or by CI)
+release/
+*.zip
