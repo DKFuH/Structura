@@ -3346,16 +3346,14 @@ begin
   MasterDocx := IncludeTrailingPathDelimiter(ExportFolder) + 'master.docx';
 
   // Nach erfolgreichem Export anbieten, das Ergebnis zu öffnen
-  case QuestionDlg('Export abgeschlossen',
-    InfoText + LineEnding + LineEnding + 'Was möchtest du tun?',
-    mtConfirmation,
-    [mrYes, 'DOCX öffnen', mrAll, 'Ordner öffnen', mrCancel, 'Schließen'], 0) of
-    mrYes:
-      if FileExists(MasterDocx) then
-        OpenDocument(MasterDocx)
-      else
-        ShowInFileManager(ExportFolder);
-    mrAll:
+  if MessageDlg('Export abgeschlossen',
+    InfoText + LineEnding + LineEnding +
+    'Exportierte DOCX-Datei jetzt öffnen?',
+    mtConfirmation, [mbYes, mbNo], 0) = mrYes then
+  begin
+    if FileExists(MasterDocx) then
+      OpenDocument(MasterDocx)
+    else
       ShowInFileManager(ExportFolder);
   end;
 end;
