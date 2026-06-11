@@ -12,12 +12,16 @@ type
   TDocxPreview = class
   public
     class function LoadPreviewText(const AFileName: string): string;
+    // Liefert den Inhalt von <w:body> (ohne abschließendes sectPr) als XML,
+    // Zeichnungen/Objekte entfernt. Für den formattreuen Zusammenführen-Export.
+    class function LoadChapterBodyXml(const AFileName: string;
+      out ABodyXml: string): Boolean;
   end;
 
 implementation
 
 uses
-  zipper, DOM, XMLRead, FileUtil;
+  zipper, DOM, XMLRead, XMLWrite, FileUtil;
 
 type
   // Leitet die Unzip-Ausgabe in einen vorhandenen Speicherstream um,
@@ -133,6 +137,123 @@ begin
     Files.Free;
     Grabber.Free;
     UnZipper.Free;
+  end;
+end;
+
+// Entfernt rekursiv Knoten, die externe Beziehungen/Medien referenzieren
+// (Zeichnungen, eingebettete Objekte, Bilder), damit der zusammengeführte
+// Body keine toten Verweise enthält.
+procedure StripDrawings(ANode: TDOMNode);
+var
+  I: Integer;
+  Child: TDOMNode;
+begin
+  I := 0;
+  while I < ANode.ChildNodes.Count do
+  begin
+    Child := ANode.ChildNodes.Item[I];
+    if (Child.NodeName = 'w:drawing') or (Child.NodeName = 'w:object') or
+       (Child.NodeName = 'w:pict') or (Child.NodeName = 'mc:AlternateContent') or
+       (Child.NodeName = 'v:shape') then
+    begin
+      ANode.RemoveChild(Child);
+      // Index nicht erhöhen — nachfolgende Knoten rücken nach
+    end
+    else
+    begin
+      StripDrawings(Child);
+      Inc(I);
+    end;
+  end;
+end;
+
+function SerializeNode(ANode: TDOMNode): string;
+var
+  Stream: TStringStream;
+  P: Integer;
+begin
+  Stream := TStringStream.Create('');
+  try
+    WriteXML(ANode, Stream);
+    Result := Stream.DataString;
+    // WriteXML kann eine XML-Deklaration voranstellen — entfernen
+    if Pos('<?xml', Result) = 1 then
+    begin
+      P := Pos('?>', Result);
+      if P > 0 then
+        Result := Copy(Result, P + 2, MaxInt);
+    end;
+    Result := Trim(Result);
+  finally
+    Stream.Free;
+  end;
+end;
+
+class function TDocxPreview.LoadChapterBodyXml(const AFileName: string;
+  out ABodyXml: string): Boolean;
+var
+  XmlStream: TMemoryStream;
+  Doc: TXMLDocument;
+  ErrorText, TempCopy: string;
+  Extracted: Boolean;
+  Body, Child: TDOMNode;
+  I: Integer;
+begin
+  Result := False;
+  ABodyXml := '';
+  if not FileExists(AFileName) or
+     not SameText(ExtractFileExt(AFileName), '.docx') then
+    Exit;
+
+  XmlStream := TMemoryStream.Create;
+  Doc := nil;
+  try
+    Extracted := TryExtractDocumentXml(AFileName, XmlStream, ErrorText);
+    if not Extracted then
+    begin
+      TempCopy := IncludeTrailingPathDelimiter(GetTempDir(False)) +
+        'structura_merge_' + FormatDateTime('yyyymmddhhnnsszzz', Now) + '.docx';
+      if CopyFile(AFileName, TempCopy) then
+      try
+        Extracted := TryExtractDocumentXml(TempCopy, XmlStream, ErrorText);
+      finally
+        DeleteFile(TempCopy);
+      end;
+    end;
+    if not Extracted then
+      Exit;
+
+    try
+      XmlStream.Position := 0;
+      ReadXMLFile(Doc, XmlStream);
+      // <w:body> finden
+      Body := nil;
+      if Assigned(Doc.DocumentElement) then
+        for I := 0 to Doc.DocumentElement.ChildNodes.Count - 1 do
+          if Doc.DocumentElement.ChildNodes.Item[I].NodeName = 'w:body' then
+          begin
+            Body := Doc.DocumentElement.ChildNodes.Item[I];
+            Break;
+          end;
+      if not Assigned(Body) then
+        Exit;
+
+      StripDrawings(Body);
+      // Kinder serialisieren, sectPr auslassen
+      for I := 0 to Body.ChildNodes.Count - 1 do
+      begin
+        Child := Body.ChildNodes.Item[I];
+        if Child.NodeName = 'w:sectPr' then
+          Continue;
+        ABodyXml := ABodyXml + SerializeNode(Child);
+      end;
+      Result := True;
+    except
+      Result := False;
+    end;
+  finally
+    Doc.Free;
+    XmlStream.Free;
   end;
 end;
 

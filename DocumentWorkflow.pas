@@ -8,6 +8,12 @@ uses
   Classes, SysUtils, StructuraTypes;
 
 type
+  // Wie der Kapitelinhalt ins Master-DOCX kommt.
+  //  cmFidelity = Originalkapitel per altChunk einbetten (volle Treue, Word)
+  //  cmUniversal = Absatz-/Tabellen-XML zusammenführen (Word & LibreOffice)
+  //  cmText = nur extrahierter Text (einfach, überall)
+  TExportContentMode = (cmFidelity, cmUniversal, cmText);
+
   // Optionen für den Manuskript-Export. SelectedItems ist parallel zu den
   // Projekt-Items indiziert; leeres Array bedeutet: alles exportieren.
   TExportOptions = record
@@ -16,6 +22,7 @@ type
     NumberDigits: Integer;       // 1..3, Stellen der Kapitelnummer
     IncludeDividers: Boolean;
     ReviewExport: Boolean;       // zusätzlich eine Textdatei pro Kapitel
+    ContentMode: TExportContentMode;
     SelectedItems: array of Boolean;
   end;
 
@@ -253,13 +260,15 @@ begin
   end;
 end;
 
-// Ein DOCX-Absatz aus reinem Text. ASizeHalfPt in halben Punkten (0 = Standard).
-function DocxParagraph(const AText: string; ABold: Boolean;
-  ASizeHalfPt: Integer; ACenter, APageBreakBefore: Boolean): string;
+// Ein DOCX-Absatz mit optionalem Absatz-Style (z. B. Title, Heading1).
+function DocxParagraph(const AText, AStyle: string;
+  ACenter, APageBreakBefore: Boolean): string;
 var
-  PPr, RPr: string;
+  PPr: string;
 begin
   PPr := '';
+  if AStyle <> '' then
+    PPr := PPr + '<w:pStyle w:val="' + AStyle + '"/>';
   if APageBreakBefore then
     PPr := PPr + '<w:pageBreakBefore/>';
   if ACenter then
@@ -267,16 +276,7 @@ begin
   if PPr <> '' then
     PPr := '<w:pPr>' + PPr + '</w:pPr>';
 
-  RPr := '';
-  if ABold then
-    RPr := RPr + '<w:b/>';
-  if ASizeHalfPt > 0 then
-    RPr := RPr + Format('<w:sz w:val="%d"/><w:szCs w:val="%d"/>',
-      [ASizeHalfPt, ASizeHalfPt]);
-  if RPr <> '' then
-    RPr := '<w:rPr>' + RPr + '</w:rPr>';
-
-  Result := '<w:p>' + PPr + '<w:r>' + RPr +
+  Result := '<w:p>' + PPr + '<w:r>' +
     '<w:t xml:space="preserve">' + HtmlEscape(AText) + '</w:t></w:r></w:p>';
 end;
 
@@ -296,7 +296,7 @@ begin
       if Trim(Lines[I]) = '' then
         Para.Add('<w:p/>')
       else
-        Para.Add(DocxParagraph(Lines[I], False, 0, False, False));
+        Para.Add(DocxParagraph(Lines[I], '', False, False));
     end;
     Result := Para.Text;
   finally
@@ -305,12 +305,44 @@ begin
   end;
 end;
 
-// Schreibt ein vollständiges DOCX-Paket mit dem übergebenen Body-XML.
-function WriteMasterDocx(const TargetFile, BodyInner: string;
-  out ErrorText: string): Boolean;
+// Vollständiges, Word-konformes Stylesheet (Normal + Titel/Untertitel/Heading).
+function MasterStylesXml: string;
+begin
+  Result :=
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+    '<w:docDefaults><w:rPrDefault><w:rPr>' +
+    '<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="22"/><w:szCs w:val="22"/>' +
+    '</w:rPr></w:rPrDefault><w:pPrDefault><w:pPr>' +
+    '<w:spacing w:after="160" w:line="259" w:lineRule="auto"/>' +
+    '</w:pPr></w:pPrDefault></w:docDefaults>' +
+    '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>' +
+    '<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/>' +
+    '<w:basedOn w:val="Normal"/><w:pPr><w:jc w:val="center"/></w:pPr>' +
+    '<w:rPr><w:b/><w:sz w:val="48"/><w:szCs w:val="48"/></w:rPr></w:style>' +
+    '<w:style w:type="paragraph" w:styleId="Subtitle"><w:name w:val="Subtitle"/>' +
+    '<w:basedOn w:val="Normal"/><w:pPr><w:jc w:val="center"/></w:pPr>' +
+    '<w:rPr><w:i/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr></w:style>' +
+    '<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/>' +
+    '<w:basedOn w:val="Normal"/><w:next w:val="Normal"/>' +
+    '<w:pPr><w:keepNext/><w:outlineLvl w:val="0"/></w:pPr>' +
+    '<w:rPr><w:b/><w:sz w:val="36"/><w:szCs w:val="36"/></w:rPr></w:style>' +
+    '<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/>' +
+    '<w:basedOn w:val="Normal"/><w:next w:val="Normal"/>' +
+    '<w:pPr><w:keepNext/><w:outlineLvl w:val="1"/></w:pPr>' +
+    '<w:rPr><w:b/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr></w:style>' +
+    '</w:styles>';
+end;
+
+// Schreibt ein vollständiges, Word-konformes DOCX-Paket (inkl. Styles und
+// docProps, damit Word es ohne Reparaturhinweis öffnet).
+function WriteMasterDocx(const TargetFile, BodyInner, ATitle, AAuthor: string;
+  const AChunkFiles: array of string; out ErrorText: string): Boolean;
 var
-  TempRoot, WordDir, RelsDir: string;
+  TempRoot, WordDir, RelsDir, PropsDir, EmbedDir: string;
   ZipperObj: TZipper;
+  Stamp, ChunkOverrides, ChunkRels, EmbedName: string;
+  I: Integer;
 begin
   Result := False;
   ErrorText := '';
@@ -318,8 +350,32 @@ begin
     FormatDateTime('yyyymmddhhnnsszzz', Now);
   WordDir := IncludeTrailingPathDelimiter(TempRoot) + 'word';
   RelsDir := IncludeTrailingPathDelimiter(TempRoot) + '_rels';
+  PropsDir := IncludeTrailingPathDelimiter(TempRoot) + 'docProps';
+  EmbedDir := IncludeTrailingPathDelimiter(WordDir) + 'embed';
   ForceDirectories(IncludeTrailingPathDelimiter(WordDir) + '_rels');
   ForceDirectories(RelsDir);
+  ForceDirectories(PropsDir);
+  if Length(AChunkFiles) > 0 then
+    ForceDirectories(EmbedDir);
+  Stamp := FormatDateTime('yyyy-mm-dd"T"hh:nn:ss"Z"', Now);
+
+  // Eingebettete Kapitel (altChunk): Content-Type-Override + Beziehung je Datei
+  ChunkOverrides := '';
+  ChunkRels := '';
+  for I := 0 to High(AChunkFiles) do
+  begin
+    EmbedName := Format('chapter%d.docx', [I + 1]);
+    CopyFile(AChunkFiles[I], IncludeTrailingPathDelimiter(EmbedDir) + EmbedName,
+      [cffOverwriteFile]);
+    ChunkOverrides := ChunkOverrides +
+      Format('<Override PartName="/word/embed/%s" ' +
+      'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>',
+      [EmbedName]);
+    ChunkRels := ChunkRels +
+      Format('<Relationship Id="rIdChunk%d" ' +
+      'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/aFChunk" ' +
+      'Target="embed/%s"/>', [I + 1, EmbedName]);
+  end;
 
   SaveTextFile(IncludeTrailingPathDelimiter(TempRoot) + '[Content_Types].xml',
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -330,24 +386,59 @@ begin
     'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
     '<Override PartName="/word/styles.xml" ' +
     'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
+    '<Override PartName="/docProps/core.xml" ' +
+    'ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>' +
+    '<Override PartName="/docProps/app.xml" ' +
+    'ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>' +
+    ChunkOverrides +
     '</Types>');
   SaveTextFile(IncludeTrailingPathDelimiter(RelsDir) + '.rels',
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
     '<Relationship Id="rId1" ' +
     'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" ' +
-    'Target="word/document.xml"/></Relationships>');
+    'Target="word/document.xml"/>' +
+    '<Relationship Id="rId2" ' +
+    'Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" ' +
+    'Target="docProps/core.xml"/>' +
+    '<Relationship Id="rId3" ' +
+    'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" ' +
+    'Target="docProps/app.xml"/>' +
+    '</Relationships>');
   SaveTextFile(IncludeTrailingPathDelimiter(WordDir) + 'document.xml',
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+    '<w:document ' +
+    'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" ' +
+    'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
+    'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" ' +
+    'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" ' +
+    'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+    'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" ' +
+    'mc:Ignorable="w14 wp14">' +
     '<w:body>' + BodyInner + '<w:sectPr/></w:body></w:document>');
-  SaveTextFile(IncludeTrailingPathDelimiter(WordDir) + 'styles.xml',
-    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-    '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>');
+  SaveTextFile(IncludeTrailingPathDelimiter(WordDir) + 'styles.xml', MasterStylesXml);
   SaveTextFile(IncludeTrailingPathDelimiter(WordDir) +
     RelativeProjectPath(['_rels', 'document.xml.rels']),
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>');
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    ChunkRels + '</Relationships>');
+  SaveTextFile(IncludeTrailingPathDelimiter(PropsDir) + 'core.xml',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<cp:coreProperties ' +
+    'xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" ' +
+    'xmlns:dc="http://purl.org/dc/elements/1.1/" ' +
+    'xmlns:dcterms="http://purl.org/dc/terms/" ' +
+    'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
+    '<dc:title>' + HtmlEscape(ATitle) + '</dc:title>' +
+    '<dc:creator>' + HtmlEscape(AAuthor) + '</dc:creator>' +
+    '<cp:lastModifiedBy>Structura</cp:lastModifiedBy>' +
+    '<dcterms:created xsi:type="dcterms:W3CDTF">' + Stamp + '</dcterms:created>' +
+    '<dcterms:modified xsi:type="dcterms:W3CDTF">' + Stamp + '</dcterms:modified>' +
+    '</cp:coreProperties>');
+  SaveTextFile(IncludeTrailingPathDelimiter(PropsDir) + 'app.xml',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">' +
+    '<Application>Structura</Application></Properties>');
 
   ZipperObj := TZipper.Create;
   try
@@ -358,6 +449,12 @@ begin
     AddZipEntry(ZipperObj, IncludeTrailingPathDelimiter(WordDir) + 'styles.xml', RelativeProjectPath(['word', 'styles.xml']));
     AddZipEntry(ZipperObj, IncludeTrailingPathDelimiter(WordDir) + RelativeProjectPath(['_rels', 'document.xml.rels']),
       RelativeProjectPath(['word', '_rels', 'document.xml.rels']));
+    AddZipEntry(ZipperObj, IncludeTrailingPathDelimiter(PropsDir) + 'core.xml', RelativeProjectPath(['docProps', 'core.xml']));
+    AddZipEntry(ZipperObj, IncludeTrailingPathDelimiter(PropsDir) + 'app.xml', RelativeProjectPath(['docProps', 'app.xml']));
+    for I := 0 to High(AChunkFiles) do
+      AddZipEntry(ZipperObj,
+        IncludeTrailingPathDelimiter(EmbedDir) + Format('chapter%d.docx', [I + 1]),
+        RelativeProjectPath(['word', 'embed', Format('chapter%d.docx', [I + 1])]));
     ZipperObj.ZipAllFiles;
     Result := FileExists(TargetFile);
     if not Result then
@@ -426,6 +523,7 @@ begin
   Result.NumberDigits := 2;
   Result.IncludeDividers := True;
   Result.ReviewExport := False;
+  Result.ContentMode := cmFidelity;
   SetLength(Result.SelectedItems, 0);
 end;
 
@@ -454,9 +552,11 @@ var
   ErrorText: string;
   MasterDocx: string;
   MasterPdf: string;
-  DocxError: string;
+  DocxError, ChapterBodyXml: string;
+  ChunkFiles: array of string;
 begin
   Result := False;
+  SetLength(ChunkFiles, 0);
   ExportFolder := IncludeTrailingPathDelimiter(AProject.FolderPath) + 'export';
   ForceDirectories(ExportFolder);
   MarkdownFile := IncludeTrailingPathDelimiter(ExportFolder) + 'master.md';
@@ -488,12 +588,12 @@ begin
       Markdown.Add('');
       Markdown.Add('---');
       Markdown.Add('');
-      // Titelseite im DOCX: groß, zentriert
-      Docx.Add(DocxParagraph(AProject.Title, True, 48, True, False));
+      // Titelseite im DOCX über echte Styles
+      Docx.Add(DocxParagraph(AProject.Title, 'Title', True, False));
       if Trim(AProject.Subtitle) <> '' then
-        Docx.Add(DocxParagraph(AProject.Subtitle, False, 32, True, False));
+        Docx.Add(DocxParagraph(AProject.Subtitle, 'Subtitle', True, False));
       if Trim(AProject.Author) <> '' then
-        Docx.Add(DocxParagraph(AProject.Author, False, 0, True, False));
+        Docx.Add(DocxParagraph(AProject.Author, '', True, False));
     end;
 
     ChapterNumber := 0;
@@ -508,7 +608,7 @@ begin
           Html.Add('<h1>' + HtmlEscape(Item.Title) + '</h1>');
           Markdown.Add('# ' + Item.Title);
           Markdown.Add('');
-          Docx.Add(DocxParagraph(Item.Title, True, 36, True, True));
+          Docx.Add(DocxParagraph(Item.Title, 'Heading1', False, True));
         end;
         Continue;
       end;
@@ -532,9 +632,29 @@ begin
       Markdown.Add('');
       Markdown.Add(ChapterText);
       Markdown.Add('');
-      // Kapitel im DOCX: Überschrift auf neuer Seite, dann der Text
-      Docx.Add(DocxParagraph(Heading, True, 32, False, True));
-      Docx.Add(DocxBodyFromText(ChapterText));
+      // Kapitel im DOCX: Überschrift auf neuer Seite, dann der Inhalt je Modus
+      Docx.Add(DocxParagraph(Heading, 'Heading2', False, True));
+      case AOptions.ContentMode of
+        cmFidelity:
+          begin
+            // Originalkapitel per altChunk einbetten — Word führt es voll
+            // formattreu beim Öffnen zusammen
+            SetLength(ChunkFiles, Length(ChunkFiles) + 1);
+            ChunkFiles[High(ChunkFiles)] := SourceFile;
+            Docx.Add(Format('<w:altChunk r:id="rIdChunk%d"/>',
+              [Length(ChunkFiles)]));
+          end;
+        cmUniversal:
+          // Absatz-/Tabellen-XML direkt übernehmen (Word & LibreOffice)
+          if TDocxPreview.LoadChapterBodyXml(SourceFile, ChapterBodyXml) and
+             (Trim(ChapterBodyXml) <> '') then
+            Docx.Add(ChapterBodyXml)
+          else
+            Docx.Add(DocxBodyFromText(ChapterText));
+      else
+        // cmText: nur der extrahierte Text
+        Docx.Add(DocxBodyFromText(ChapterText));
+      end;
 
       // Prüfexport: reiner Text pro Kapitel, zum Einfügen in Grammarly,
       // LanguageTool oder ChatGPT
@@ -555,7 +675,8 @@ begin
     end;
 
     // DOCX immer nativ erzeugen — unabhängig von LibreOffice
-    if not WriteMasterDocx(MasterDocx, Docx.Text, DocxError) then
+    if not WriteMasterDocx(MasterDocx, Docx.Text, AProject.Title, AProject.Author,
+      ChunkFiles, DocxError) then
     begin
       InfoText := 'Export erstellt, aber DOCX fehlgeschlagen: ' + DocxError;
       Exit(True);
@@ -566,12 +687,16 @@ begin
     Docx.Free;
   end;
 
-  // PDF bleibt optional und kommt — falls vorhanden — über LibreOffice aus dem DOCX
-  LibreOfficeExe := FindLibreOfficeExecutable;
-  if LibreOfficeExe <> '' then
-    RunProcessAndWait(LibreOfficeExe,
-      ['--headless', '--convert-to', 'pdf', '--outdir', ExportFolder, MasterDocx],
-      AProject.FolderPath, ErrorText);
+  // PDF bleibt optional über LibreOffice. Im Fidelity-Modus enthält das DOCX
+  // altChunks, die LibreOffice nicht expandiert — dann keine (leere) PDF erzeugen.
+  if AOptions.ContentMode <> cmFidelity then
+  begin
+    LibreOfficeExe := FindLibreOfficeExecutable;
+    if LibreOfficeExe <> '' then
+      RunProcessAndWait(LibreOfficeExe,
+        ['--headless', '--convert-to', 'pdf', '--outdir', ExportFolder, MasterDocx],
+        AProject.FolderPath, ErrorText);
+  end;
 
   InfoText := Format('Export erstellt (%d Kapitel):', [ExportedChapters]);
   InfoText := InfoText + LineEnding + 'DOCX: ' + MasterDocx;

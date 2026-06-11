@@ -13,10 +13,9 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 - Import now creates a proper new project in your project root instead of writing `structura.json` into the source folder. You pick a source folder anywhere (where your manuscript DOCX live); Structura scans it, copies the selected files into a new project subfolder (numbered `chapters/`), and leaves the originals untouched
 - Import is structure-aware: it scans subfolders recursively, turns each subfolder into a part divider (e.g. `Teil 1/` → "Teil 1"), skips Structura's own `backup`/`export`/`notes` folders and Word lock files (`~$…`), and lets you reorder entries with ▲▼ before importing
-
-### Changed
-
-- Export now always produces a real `master.docx`, generated natively (OOXML written directly, no LibreOffice required) — title page, part headings, and chapter headings with page breaks. Previously DOCX was only created when LibreOffice was installed; without it you only got Markdown/HTML. PDF remains optional via LibreOffice and is now converted from the native DOCX
+- Export now always produces a real `master.docx`, generated natively (OOXML written directly, no LibreOffice required) — title page, part headings, and chapter headings with page breaks. Previously DOCX was only created when LibreOffice was installed; without it you only got Markdown/HTML. PDF remains optional via LibreOffice
+- The native DOCX is now fully Word-compliant: real paragraph styles (Title, Subtitle, Heading 1/2 with outline levels for the navigation pane and table of contents) and document properties (`docProps/core.xml`, `app.xml`), so Word opens it without a repair prompt
+- Export keeps chapter formatting. New "Kapitelinhalt im DOCX" choice in the export dialog: **full fidelity** (default) embeds each original chapter via OOXML `altChunk` so Word merges them with all styling, tables and images intact; **universal** merges the chapter paragraph/table XML directly (works in Word and LibreOffice, drops images and exact list numbering); **text only** keeps the previous plain-text behaviour. Previously every export was flattened to uniform plain text
 - After a successful export, Structura asks whether to open the exported DOCX
 
 ### Fixed

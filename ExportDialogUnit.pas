@@ -25,7 +25,8 @@ var
   ChapterList: TCheckListBox;
   TitlePageCheck, NumberCheck, DividerCheck, ReviewCheck: TCheckBox;
   OkButton, CancelButton: TButton;
-  ListLabel, OptionsLabel: TLabel;
+  ListLabel, OptionsLabel, ModeLabel: TLabel;
+  ModeCombo: TComboBox;
   I, Sequence: Integer;
   Item: TStructuraItem;
 begin
@@ -39,7 +40,7 @@ begin
     Dialog.BorderStyle := bsDialog;
     Dialog.Position := poScreenCenter;
     Dialog.ClientWidth := 560;
-    Dialog.ClientHeight := 492;
+    Dialog.ClientHeight := 560;
 
     ListLabel := TLabel.Create(Dialog);
     ListLabel.Parent := Dialog;
@@ -101,6 +102,21 @@ begin
     ReviewCheck.Caption := 'Prüfexport: zusätzlich eine Textdatei pro Kapitel (export\review\)';
     ReviewCheck.Checked := False;
 
+    ModeLabel := TLabel.Create(Dialog);
+    ModeLabel.Parent := Dialog;
+    ModeLabel.SetBounds(16, 428, 520, 15);
+    ModeLabel.Caption := 'Kapitelinhalt im DOCX:';
+    ModeLabel.Font.Style := [fsBold];
+
+    ModeCombo := TComboBox.Create(Dialog);
+    ModeCombo.Parent := Dialog;
+    ModeCombo.SetBounds(16, 448, 528, 26);
+    ModeCombo.Style := csDropDownList;
+    ModeCombo.Items.Add('Volle Formatierung – Originalkapitel einbetten (für Word)');
+    ModeCombo.Items.Add('Formatierung universell – zusammenführen (Word & LibreOffice)');
+    ModeCombo.Items.Add('Nur Text – ohne Formatierung (überall)');
+    ModeCombo.ItemIndex := 0;
+
     // Buttons direkt aufs Dialog, an Unterkante/rechts verankert — kein
     // Zwischen-Panel, dessen Breite zum Setzzeitpunkt noch nicht steht.
     OkButton := TButton.Create(Dialog);
@@ -126,6 +142,12 @@ begin
     AOptions.NumberChapters := NumberCheck.Checked;
     AOptions.IncludeDividers := DividerCheck.Checked;
     AOptions.ReviewExport := ReviewCheck.Checked;
+    case ModeCombo.ItemIndex of
+      1: AOptions.ContentMode := cmUniversal;
+      2: AOptions.ContentMode := cmText;
+    else
+      AOptions.ContentMode := cmFidelity;
+    end;
     SetLength(AOptions.SelectedItems, AProject.Count);
     for I := 0 to High(AOptions.SelectedItems) do
       AOptions.SelectedItems[I] := False;
