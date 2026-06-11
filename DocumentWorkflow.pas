@@ -253,6 +253,121 @@ begin
   end;
 end;
 
+// Ein DOCX-Absatz aus reinem Text. ASizeHalfPt in halben Punkten (0 = Standard).
+function DocxParagraph(const AText: string; ABold: Boolean;
+  ASizeHalfPt: Integer; ACenter, APageBreakBefore: Boolean): string;
+var
+  PPr, RPr: string;
+begin
+  PPr := '';
+  if APageBreakBefore then
+    PPr := PPr + '<w:pageBreakBefore/>';
+  if ACenter then
+    PPr := PPr + '<w:jc w:val="center"/>';
+  if PPr <> '' then
+    PPr := '<w:pPr>' + PPr + '</w:pPr>';
+
+  RPr := '';
+  if ABold then
+    RPr := RPr + '<w:b/>';
+  if ASizeHalfPt > 0 then
+    RPr := RPr + Format('<w:sz w:val="%d"/><w:szCs w:val="%d"/>',
+      [ASizeHalfPt, ASizeHalfPt]);
+  if RPr <> '' then
+    RPr := '<w:rPr>' + RPr + '</w:rPr>';
+
+  Result := '<w:p>' + PPr + '<w:r>' + RPr +
+    '<w:t xml:space="preserve">' + HtmlEscape(AText) + '</w:t></w:r></w:p>';
+end;
+
+// Mehrzeiligen Kapiteltext in DOCX-Absätze umsetzen (eine Zeile = ein Absatz).
+function DocxBodyFromText(const AText: string): string;
+var
+  Lines: TStringList;
+  I: Integer;
+  Para: TStringList;
+begin
+  Para := TStringList.Create;
+  Lines := TStringList.Create;
+  try
+    Lines.Text := AText;
+    for I := 0 to Lines.Count - 1 do
+    begin
+      if Trim(Lines[I]) = '' then
+        Para.Add('<w:p/>')
+      else
+        Para.Add(DocxParagraph(Lines[I], False, 0, False, False));
+    end;
+    Result := Para.Text;
+  finally
+    Lines.Free;
+    Para.Free;
+  end;
+end;
+
+// Schreibt ein vollständiges DOCX-Paket mit dem übergebenen Body-XML.
+function WriteMasterDocx(const TargetFile, BodyInner: string;
+  out ErrorText: string): Boolean;
+var
+  TempRoot, WordDir, RelsDir: string;
+  ZipperObj: TZipper;
+begin
+  Result := False;
+  ErrorText := '';
+  TempRoot := GetTempDir(False) + 'structura_master_' +
+    FormatDateTime('yyyymmddhhnnsszzz', Now);
+  WordDir := IncludeTrailingPathDelimiter(TempRoot) + 'word';
+  RelsDir := IncludeTrailingPathDelimiter(TempRoot) + '_rels';
+  ForceDirectories(IncludeTrailingPathDelimiter(WordDir) + '_rels');
+  ForceDirectories(RelsDir);
+
+  SaveTextFile(IncludeTrailingPathDelimiter(TempRoot) + '[Content_Types].xml',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/word/document.xml" ' +
+    'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+    '<Override PartName="/word/styles.xml" ' +
+    'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
+    '</Types>');
+  SaveTextFile(IncludeTrailingPathDelimiter(RelsDir) + '.rels',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" ' +
+    'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" ' +
+    'Target="word/document.xml"/></Relationships>');
+  SaveTextFile(IncludeTrailingPathDelimiter(WordDir) + 'document.xml',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+    '<w:body>' + BodyInner + '<w:sectPr/></w:body></w:document>');
+  SaveTextFile(IncludeTrailingPathDelimiter(WordDir) + 'styles.xml',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>');
+  SaveTextFile(IncludeTrailingPathDelimiter(WordDir) +
+    RelativeProjectPath(['_rels', 'document.xml.rels']),
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>');
+
+  ZipperObj := TZipper.Create;
+  try
+    ZipperObj.FileName := TargetFile;
+    AddZipEntry(ZipperObj, IncludeTrailingPathDelimiter(TempRoot) + '[Content_Types].xml', '[Content_Types].xml');
+    AddZipEntry(ZipperObj, IncludeTrailingPathDelimiter(RelsDir) + '.rels', RelativeProjectPath(['_rels', '.rels']));
+    AddZipEntry(ZipperObj, IncludeTrailingPathDelimiter(WordDir) + 'document.xml', RelativeProjectPath(['word', 'document.xml']));
+    AddZipEntry(ZipperObj, IncludeTrailingPathDelimiter(WordDir) + 'styles.xml', RelativeProjectPath(['word', 'styles.xml']));
+    AddZipEntry(ZipperObj, IncludeTrailingPathDelimiter(WordDir) + RelativeProjectPath(['_rels', 'document.xml.rels']),
+      RelativeProjectPath(['word', '_rels', 'document.xml.rels']));
+    ZipperObj.ZipAllFiles;
+    Result := FileExists(TargetFile);
+    if not Result then
+      ErrorText := 'DOCX-Datei konnte nicht erstellt werden.';
+  finally
+    ZipperObj.Free;
+    DeleteDirectory(TempRoot, False);
+  end;
+end;
+
 class function TDocumentWorkflow.ImportChapterFile(const SourceFile, ProjectFolder,
   PreferredTitle: string; out RelativeFileName, ErrorText: string): Boolean;
 var
@@ -329,6 +444,7 @@ var
   HtmlFile: string;
   Html: TStringList;
   Markdown: TStringList;
+  Docx: TStringList;
   I: Integer;
   Item: TStructuraItem;
   ChapterNumber, ExportedChapters: Integer;
@@ -338,6 +454,7 @@ var
   ErrorText: string;
   MasterDocx: string;
   MasterPdf: string;
+  DocxError: string;
 begin
   Result := False;
   ExportFolder := IncludeTrailingPathDelimiter(AProject.FolderPath) + 'export';
@@ -352,6 +469,7 @@ begin
 
   Html := TStringList.Create;
   Markdown := TStringList.Create;
+  Docx := TStringList.Create;
   try
     Html.Add('<html><head><meta charset="utf-8"><title>' + HtmlEscape(AProject.Title) + '</title></head><body>');
     if AOptions.IncludeTitlePage then
@@ -370,6 +488,12 @@ begin
       Markdown.Add('');
       Markdown.Add('---');
       Markdown.Add('');
+      // Titelseite im DOCX: groß, zentriert
+      Docx.Add(DocxParagraph(AProject.Title, True, 48, True, False));
+      if Trim(AProject.Subtitle) <> '' then
+        Docx.Add(DocxParagraph(AProject.Subtitle, False, 32, True, False));
+      if Trim(AProject.Author) <> '' then
+        Docx.Add(DocxParagraph(AProject.Author, False, 0, True, False));
     end;
 
     ChapterNumber := 0;
@@ -384,6 +508,7 @@ begin
           Html.Add('<h1>' + HtmlEscape(Item.Title) + '</h1>');
           Markdown.Add('# ' + Item.Title);
           Markdown.Add('');
+          Docx.Add(DocxParagraph(Item.Title, True, 36, True, True));
         end;
         Continue;
       end;
@@ -407,6 +532,9 @@ begin
       Markdown.Add('');
       Markdown.Add(ChapterText);
       Markdown.Add('');
+      // Kapitel im DOCX: Überschrift auf neuer Seite, dann der Text
+      Docx.Add(DocxParagraph(Heading, True, 32, False, True));
+      Docx.Add(DocxBodyFromText(ChapterText));
 
       // Prüfexport: reiner Text pro Kapitel, zum Einfügen in Grammarly,
       // LanguageTool oder ChatGPT
@@ -419,40 +547,35 @@ begin
     Html.Add('</body></html>');
     Html.SaveToFile(HtmlFile);
     Markdown.SaveToFile(MarkdownFile);
+
+    if ExportedChapters = 0 then
+    begin
+      InfoText := 'Kein Kapitel ausgewählt — es wurde nichts exportiert.';
+      Exit(False);
+    end;
+
+    // DOCX immer nativ erzeugen — unabhängig von LibreOffice
+    if not WriteMasterDocx(MasterDocx, Docx.Text, DocxError) then
+    begin
+      InfoText := 'Export erstellt, aber DOCX fehlgeschlagen: ' + DocxError;
+      Exit(True);
+    end;
   finally
     Html.Free;
     Markdown.Free;
+    Docx.Free;
   end;
 
-  if ExportedChapters = 0 then
-  begin
-    InfoText := 'Kein Kapitel ausgewählt — es wurde nichts exportiert.';
-    Exit(False);
-  end;
-
+  // PDF bleibt optional und kommt — falls vorhanden — über LibreOffice aus dem DOCX
   LibreOfficeExe := FindLibreOfficeExecutable;
   if LibreOfficeExe <> '' then
-  begin
-    if not RunProcessAndWait(LibreOfficeExe,
-      ['--headless', '--convert-to', 'docx', '--outdir', ExportFolder, HtmlFile],
-      AProject.FolderPath, ErrorText) then
-    begin
-      InfoText := 'Master-Markdown exportiert, DOCX-Konvertierung fehlgeschlagen: ' + ErrorText;
-      Exit(True);
-    end;
-    if not RunProcessAndWait(LibreOfficeExe,
-      ['--headless', '--convert-to', 'pdf', '--outdir', ExportFolder, HtmlFile],
-      AProject.FolderPath, ErrorText) then
-    begin
-      InfoText := 'Master-Markdown und DOCX exportiert, PDF-Konvertierung fehlgeschlagen: ' + ErrorText;
-      Exit(True);
-    end;
-  end;
+    RunProcessAndWait(LibreOfficeExe,
+      ['--headless', '--convert-to', 'pdf', '--outdir', ExportFolder, MasterDocx],
+      AProject.FolderPath, ErrorText);
 
-  InfoText := Format('Export erstellt (%d Kapitel): %s',
-    [ExportedChapters, MarkdownFile]);
-  if FileExists(MasterDocx) then
-    InfoText := InfoText + LineEnding + 'DOCX: ' + MasterDocx;
+  InfoText := Format('Export erstellt (%d Kapitel):', [ExportedChapters]);
+  InfoText := InfoText + LineEnding + 'DOCX: ' + MasterDocx;
+  InfoText := InfoText + LineEnding + 'Markdown: ' + MarkdownFile;
   if FileExists(MasterPdf) then
     InfoText := InfoText + LineEnding + 'PDF: ' + MasterPdf;
   if AOptions.ReviewExport then

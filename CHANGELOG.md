@@ -14,6 +14,10 @@ Versioning: [Semantic Versioning](https://semver.org/)
 - Import now creates a proper new project in your project root instead of writing `structura.json` into the source folder. You pick a source folder anywhere (where your manuscript DOCX live); Structura scans it, copies the selected files into a new project subfolder (numbered `chapters/`), and leaves the originals untouched
 - Import is structure-aware: it scans subfolders recursively, turns each subfolder into a part divider (e.g. `Teil 1/` → "Teil 1"), skips Structura's own `backup`/`export`/`notes` folders and Word lock files (`~$…`), and lets you reorder entries with ▲▼ before importing
 
+### Changed
+
+- Export now always produces a real `master.docx`, generated natively (OOXML written directly, no LibreOffice required) — title page, part headings, and chapter headings with page breaks. Previously DOCX was only created when LibreOffice was installed; without it you only got Markdown/HTML. PDF remains optional via LibreOffice and is now converted from the native DOCX
+
 ### Fixed
 
 - Export dialog buttons (Exportieren / Abbrechen) were missing — they were placed on a bottom panel whose width wasn't settled when positioned, pushing them off-screen with their right anchor. They are now anchored directly to the dialog's bottom-right
