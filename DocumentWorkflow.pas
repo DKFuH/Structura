@@ -152,7 +152,9 @@ end;
 
 procedure AddZipEntry(AZipper: TZipper; const DiskFileName, ArchiveFileName: string);
 begin
-  AZipper.Entries.AddFileEntry(DiskFileName, ArchiveFileName);
+  // OPC-Pakete (DOCX) verlangen Forward-Slashes in den Eintragsnamen.
+  AZipper.Entries.AddFileEntry(DiskFileName,
+    StringReplace(ArchiveFileName, '\', '/', [rfReplaceAll]));
 end;
 
 class function TDocumentWorkflow.FindLibreOfficeExecutable: string;
@@ -369,7 +371,7 @@ begin
       [cffOverwriteFile]);
     ChunkOverrides := ChunkOverrides +
       Format('<Override PartName="/word/embed/%s" ' +
-      'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>',
+      'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document"/>',
       [EmbedName]);
     ChunkRels := ChunkRels +
       Format('<Relationship Id="rIdChunk%d" ' +
@@ -408,13 +410,24 @@ begin
   SaveTextFile(IncludeTrailingPathDelimiter(WordDir) + 'document.xml',
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<w:document ' +
-    'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" ' +
+    'xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" ' +
+    'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" ' +
+    'xmlns:o="urn:schemas-microsoft-com:office:office" ' +
     'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
     'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" ' +
+    'xmlns:v="urn:schemas-microsoft-com:vml" ' +
+    'xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" ' +
     'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" ' +
+    'xmlns:w10="urn:schemas-microsoft-com:office:word" ' +
+    'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" ' +
+    'xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" ' +
+    'xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" ' +
+    'xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" ' +
+    'xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" ' +
+    'xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" ' +
+    'xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" ' +
     'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
-    'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" ' +
-    'mc:Ignorable="w14 wp14">' +
+    'mc:Ignorable="w14 w15 wp14">' +
     '<w:body>' + BodyInner + '<w:sectPr/></w:body></w:document>');
   SaveTextFile(IncludeTrailingPathDelimiter(WordDir) + 'styles.xml', MasterStylesXml);
   SaveTextFile(IncludeTrailingPathDelimiter(WordDir) +
