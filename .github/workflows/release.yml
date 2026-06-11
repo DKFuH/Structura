@@ -1,10 +1,16 @@
 name: Build and Release
 
 # Runs when you push a version tag, e.g.: git tag v0.1.0 && git push origin v0.1.0
+# Can also be run manually for an existing tag (workflow_dispatch).
 on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to (re)build, e.g. v0.3.0'
+        required: true
 
 permissions:
   contents: write
@@ -16,8 +22,17 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
+      - name: Determine tag
+        id: tag
+        shell: pwsh
+        run: |
+          $tag = if ('${{ github.event_name }}' -eq 'workflow_dispatch') { '${{ inputs.tag }}' } else { '${{ github.ref_name }}' }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+
       - name: Checkout source
         uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
 
       - name: Install Lazarus
         uses: gcarreno/setup-lazarus@v3
@@ -32,12 +47,15 @@ jobs:
       - name: Package release ZIP
         shell: pwsh
         run: |
-          $version = "${{ github.ref_name }}"
+          $version = "${{ steps.tag.outputs.tag }}"
           $outDir  = "release"
           New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-          Copy-Item "Structura.exe" "$outDir\Structura.exe"
-          Copy-Item "README.md"    "$outDir\README.md"
-          Copy-Item "LICENSE"      "$outDir\LICENSE"
+          Copy-Item "Structura.exe"  "$outDir\Structura.exe"
+          Copy-Item "README.md"      "$outDir\README.md"
+          Copy-Item "README.de.md"   "$outDir\README.de.md"
+          Copy-Item "LICENSE"        "$outDir\LICENSE"
+          # Laufzeit-Assets: Button-Icons, Eule, About-Icon
+          Copy-Item "assets" "$outDir\assets" -Recurse
           $zipName = "Structura-$version-windows-x64.zip"
           Compress-Archive -Path "$outDir\*" -DestinationPath $zipName
           echo "ZIP_NAME=$zipName" >> $env:GITHUB_ENV
@@ -45,7 +63,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "Structura ${{ github.ref_name }}"
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "Structura ${{ steps.tag.outputs.tag }}"
           body_path: CHANGELOG.md
           files: ${{ env.ZIP_NAME }}
           draft: false
