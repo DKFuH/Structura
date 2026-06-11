@@ -1717,25 +1717,31 @@ var
   DialogResult: TProjectDialogResult;
   Project: TStructuraProject;
   CoverSource, CoverTarget, CoverRelative: string;
+  RootFolder: string;
 begin
-  if Assigned(FSettings) and (Trim(FSettings.DefaultProjectFolder) <> '') then
-    FLastProjectFolder := FSettings.DefaultProjectFolder;
-  DialogResult := ExecuteProjectDialog(FLastProjectFolder);
+  // Hauptordner bestimmen – niemals den Unterordner eines Projekts weitergeben
+  RootFolder := '';
+  if Assigned(FSettings) then
+    RootFolder := Trim(FSettings.DefaultProjectFolder);
+  if RootFolder = '' then
+    RootFolder := GetUserDir;
+
+  DialogResult := ExecuteProjectDialog(RootFolder);
   if not DialogResult.Confirmed then
     Exit;
 
   ForceDirectories(DialogResult.FolderPath);
   Project := TStructuraProject.Create;
   TProjectStore.CreateBlankProject(Project, DialogResult.FolderPath, DialogResult.Title);
-  Project.Title := DialogResult.Title;
+  Project.Title    := DialogResult.Title;
   Project.Subtitle := DialogResult.Subtitle;
-  Project.Author := DialogResult.Author;
+  Project.Author   := DialogResult.Author;
 
   if Trim(DialogResult.CoverImagePath) <> '' then
   begin
-    CoverSource := DialogResult.CoverImagePath;
+    CoverSource   := DialogResult.CoverImagePath;
     CoverRelative := 'cover' + LowerCase(ExtractFileExt(CoverSource));
-    CoverTarget := IncludeTrailingPathDelimiter(DialogResult.FolderPath) + CoverRelative;
+    CoverTarget   := IncludeTrailingPathDelimiter(DialogResult.FolderPath) + CoverRelative;
     CopyFile(CoverSource, CoverTarget, [cffOverwriteFile]);
     Project.CoverImagePath := CoverRelative;
   end;
@@ -1747,7 +1753,9 @@ begin
   SetProject(Project);
   if Assigned(FSettings) then
   begin
-    FSettings.DefaultProjectFolder := DialogResult.FolderPath;
+    // Hauptordner merken (nicht den Unterordner des neuen Projekts)
+    FSettings.DefaultProjectFolder := ExtractFileDir(ExcludeTrailingPathDelimiter(DialogResult.FolderPath));
+    FSettings.AddRecentProject(DialogResult.FolderPath);
     TSettingsStore.Save(FSettings);
   end;
   UpdateStatus('Projekt angelegt: ' + DialogResult.Title);
