@@ -4,9 +4,9 @@ object MainForm: TMainForm
   Top = 120
   Width = 1420
   Caption = 'Structura'
-  ClientHeight = 872
+  ClientHeight = 900
   ClientWidth = 1420
-  LCLVersion = '4.99.0.0'
+  LCLVersion = '4.8.0.0'
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   object LeftPanel: TPanel
@@ -16,6 +16,8 @@ object MainForm: TMainForm
     Width = 340
     Align = alLeft
     BevelOuter = bvNone
+    ClientHeight = 853
+    ClientWidth = 340
     Constraints.MinWidth = 280
     TabOrder = 0
     object HeaderPanel: TPanel
@@ -25,6 +27,8 @@ object MainForm: TMainForm
       Width = 340
       Align = alTop
       BevelOuter = bvNone
+      ClientHeight = 72
+      ClientWidth = 340
       TabOrder = 0
       object Label1: TLabel
         Left = 12
@@ -55,6 +59,8 @@ object MainForm: TMainForm
       Width = 340
       Align = alTop
       BevelOuter = bvNone
+      ClientHeight = 260
+      ClientWidth = 340
       TabOrder = 1
       object NewButton: TBitBtn
         Left = 12
@@ -62,10 +68,10 @@ object MainForm: TMainForm
         Top = 12
         Width = 150
         Caption = 'Neues Projekt'
-        OnClick = NewProjectClick
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
+        OnClick = NewProjectClick
       end
       object OpenButton: TBitBtn
         Left = 174
@@ -73,10 +79,10 @@ object MainForm: TMainForm
         Top = 12
         Width = 150
         Caption = 'Projekt öffnen'
-        OnClick = OpenProjectClick
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
+        OnClick = OpenProjectClick
       end
       object ImportButton: TBitBtn
         Left = 12
@@ -84,10 +90,10 @@ object MainForm: TMainForm
         Top = 58
         Width = 312
         Caption = 'Projekt importieren...'
-        OnClick = ImportProjectClick
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 6
+        OnClick = ImportProjectClick
       end
       object AddButton: TBitBtn
         Left = 12
@@ -95,10 +101,10 @@ object MainForm: TMainForm
         Top = 104
         Width = 96
         Caption = 'Anlegen'
-        OnClick = AddItemClick
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
+        OnClick = AddItemClick
       end
       object EditButton: TBitBtn
         Left = 120
@@ -106,10 +112,10 @@ object MainForm: TMainForm
         Top = 104
         Width = 100
         Caption = 'Bearbeiten'
-        OnClick = EditItemClick
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
+        OnClick = EditItemClick
       end
       object DeleteButton: TBitBtn
         Left = 232
@@ -117,10 +123,10 @@ object MainForm: TMainForm
         Top = 104
         Width = 92
         Caption = 'Löschen'
-        OnClick = DeleteItemClick
         ParentShowHint = False
         ShowHint = True
         TabOrder = 4
+        OnClick = DeleteItemClick
       end
       object Label3: TLabel
         Left = 12
@@ -128,9 +134,7 @@ object MainForm: TMainForm
         Top = 200
         Width = 310
         AutoSize = False
-        Caption = 
-          'Wähle ein Kapitel aus der Liste, um Notizen und Vorschau zu ' +
-          'sehen. Kapitel lassen sich per Drag-and-Drop neu anordnen.'
+        Caption = 'Wähle ein Kapitel aus der Liste, um Notizen und Vorschau zu sehen. Kapitel lassen sich per Drag-and-Drop neu anordnen.'
         Font.Color = clGrayText
         ParentColor = False
         ParentFont = False
@@ -142,10 +146,10 @@ object MainForm: TMainForm
         Top = 150
         Width = 312
         Caption = 'Einstellungen'
-        OnClick = SettingsClick
         ParentShowHint = False
         ShowHint = True
         TabOrder = 5
+        OnClick = SettingsClick
       end
     end
     object ListPanel: TPanel
@@ -155,6 +159,8 @@ object MainForm: TMainForm
       Width = 340
       Align = alClient
       BevelOuter = bvNone
+      ClientHeight = 567
+      ClientWidth = 340
       TabOrder = 2
       object ItemListBox: TListBox
         Left = 0
@@ -164,10 +170,10 @@ object MainForm: TMainForm
         Align = alClient
         DragMode = dmAutomatic
         ItemHeight = 26
+        TabOrder = 0
         OnDragDrop = ItemListDragDrop
         OnDragOver = ItemListDragOver
         OnSelectionChange = ItemListSelectionChange
-        TabOrder = 0
       end
     end
   end
@@ -185,6 +191,8 @@ object MainForm: TMainForm
     Width = 1072
     Align = alClient
     BevelOuter = bvNone
+    ClientHeight = 853
+    ClientWidth = 1072
     TabOrder = 1
     object ProjectPanel: TScrollBox
       Left = 0
@@ -192,9 +200,11 @@ object MainForm: TMainForm
       Top = 0
       Width = 1072
       Align = alClient
-      AutoScroll = True
       BorderStyle = bsNone
+      ClientHeight = 853
+      ClientWidth = 1072
       Color = clWindow
+      ParentBackground = False
       ParentColor = False
       TabOrder = 0
       object CoverImage: TImage
@@ -248,14 +258,6 @@ object MainForm: TMainForm
         AutoSize = False
         WordWrap = True
       end
-      object OfficeSummaryLabel: TLabel
-        Left = 316
-        Height = 90
-        Top = 306
-        Width = 720
-        AutoSize = False
-        WordWrap = True
-      end
       object ProjectNotesLabel: TLabel
         Left = 24
         Height = 15
@@ -271,11 +273,11 @@ object MainForm: TMainForm
         Height = 280
         Top = 438
         Width = 1012
-        OnChange = ProjectNotesChanged
-        OnExit = ProjectNotesExit
         ScrollBars = ssAutoBoth
         TabOrder = 0
         WordWrap = False
+        OnChange = ProjectNotesChanged
+        OnExit = ProjectNotesExit
       end
     end
     object ChapterPanel: TScrollBox
@@ -284,9 +286,11 @@ object MainForm: TMainForm
       Top = 0
       Width = 1072
       Align = alClient
-      AutoScroll = True
       BorderStyle = bsNone
+      ClientHeight = 853
+      ClientWidth = 1072
       Color = clWindow
+      ParentBackground = False
       ParentColor = False
       TabOrder = 1
       object ChapterHeadingLabel: TLabel
@@ -322,17 +326,19 @@ object MainForm: TMainForm
         Height = 29
         Top = 176
         Width = 280
-        OnChange = StatusChanged
+        ItemHeight = 0
         Style = csDropDownList
         TabOrder = 0
+        OnChange = StatusChanged
       end
       object ChapterActionPanel: TFlowPanel
         Left = 24
         Height = 46
         Top = 224
         Width = 1012
-        AutoWrap = True
         BevelOuter = bvNone
+        ControlList = <>
+        FlowLayout = tlTop
         FlowStyle = fsLeftRightTopBottom
         TabOrder = 1
         object OpenChapterButton: TBitBtn
@@ -341,10 +347,10 @@ object MainForm: TMainForm
           Top = 0
           Width = 136
           Caption = 'Öffnen mit ▼'
-          OnClick = OpenMenuClick
           ParentShowHint = False
           ShowHint = True
           TabOrder = 0
+          OnClick = OpenMenuClick
         end
         object WordButton: TButton
           Left = 136
@@ -352,10 +358,10 @@ object MainForm: TMainForm
           Top = 0
           Width = 126
           Caption = 'Prüfen mit ▼'
-          OnClick = ReviewMenuClick
           ParentShowHint = False
           ShowHint = True
           TabOrder = 1
+          OnClick = ReviewMenuClick
         end
         object LibreButton: TButton
           Left = 262
@@ -363,10 +369,10 @@ object MainForm: TMainForm
           Top = 0
           Width = 116
           Caption = 'Kopieren ▼'
-          OnClick = CopyMenuClick
           ParentShowHint = False
           ShowHint = True
           TabOrder = 2
+          OnClick = CopyMenuClick
         end
         object TextMakerButton: TButton
           Left = 378
@@ -374,10 +380,10 @@ object MainForm: TMainForm
           Top = 0
           Width = 1
           Caption = '.'
-          Visible = False
           ParentShowHint = False
           ShowHint = True
           TabOrder = 3
+          Visible = False
         end
         object OpenFolderButton: TBitBtn
           Left = 379
@@ -385,22 +391,22 @@ object MainForm: TMainForm
           Top = 0
           Width = 1
           Caption = '.'
-          Visible = False
           ParentShowHint = False
           ShowHint = True
           TabOrder = 4
+          Visible = False
         end
         object PdfPreviewButton: TBitBtn
           Left = 380
           Height = 34
+          Hint = 'Optionale PDF-Vorschau über LibreOffice'
           Top = 0
           Width = 1
           Caption = '.'
-          Hint = 'Optionale PDF-Vorschau über LibreOffice'
-          Visible = False
           ParentShowHint = False
           ShowHint = True
           TabOrder = 5
+          Visible = False
         end
         object CopyTextButton: TButton
           Left = 381
@@ -408,10 +414,10 @@ object MainForm: TMainForm
           Top = 0
           Width = 1
           Caption = '.'
-          Visible = False
           ParentShowHint = False
           ShowHint = True
           TabOrder = 6
+          Visible = False
         end
         object ExportButton: TBitBtn
           Left = 378
@@ -419,10 +425,10 @@ object MainForm: TMainForm
           Top = 0
           Width = 104
           Caption = 'Export ▼'
-          OnClick = ExportMenuClick
           ParentShowHint = False
           ShowHint = True
           TabOrder = 7
+          OnClick = ExportMenuClick
         end
       end
       object NotesLabel: TLabel
@@ -440,11 +446,11 @@ object MainForm: TMainForm
         Height = 420
         Top = 320
         Width = 460
-        OnChange = NotesChanged
-        OnExit = NotesExit
         ScrollBars = ssAutoBoth
         TabOrder = 2
         WordWrap = False
+        OnChange = NotesChanged
+        OnExit = NotesExit
       end
       object PreviewLabel: TLabel
         Left = 510
@@ -464,7 +470,6 @@ object MainForm: TMainForm
         ReadOnly = True
         ScrollBars = ssAutoBoth
         TabOrder = 3
-        WordWrap = True
       end
     end
   end
@@ -474,6 +479,5 @@ object MainForm: TMainForm
     Top = 853
     Width = 1420
     Panels = <>
-    SimplePanel = True
   end
 end

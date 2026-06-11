@@ -52,8 +52,29 @@ object SettingsDialogForm: TSettingsDialogForm
           Left = 16
           Height = 23
           Top = 96
-          Width = 680
+          Width = 440
           TabOrder = 1
+        end
+        object NumberFormatLabel: TLabel
+          Left = 480
+          Height = 15
+          Top = 76
+          Width = 120
+          Caption = 'Kapitelnummerierung'
+        end
+        object NumberFormatCombo: TComboBox
+          Left = 480
+          Height = 23
+          Top = 96
+          Width = 216
+          ItemHeight = 15
+          Items.Strings = (
+            '1, 2, 3 … (eine Stelle)'
+            '01, 02, 03 … (zwei Stellen)'
+            '001, 002, 003 … (drei Stellen)'
+          )
+          Style = csDropDownList
+          TabOrder = 9
         end
         object WordLabel: TLabel
           Left = 16
@@ -165,6 +186,23 @@ object SettingsDialogForm: TSettingsDialogForm
           Caption = 'Erneut suchen'
           OnClick = RescanProgramsButtonClick
           TabOrder = 8
+        end
+        object BackupKeepDaysLabel: TLabel
+          Left = 480
+          Height = 15
+          Top = 360
+          Width = 200
+          Caption = 'Tagesbackups aufbewahren (Tage)'
+        end
+        object BackupKeepDaysEdit: TSpinEdit
+          Left = 480
+          Height = 23
+          Top = 380
+          Width = 80
+          MaxValue = 365
+          MinValue = 1
+          TabOrder = 10
+          Value = 14
         end
         object ProgramStatusLabel: TLabel
           Left = 16

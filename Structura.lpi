@@ -34,7 +34,13 @@
         <ComponentName Value="MainForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="614"/>
+        <CursorPos X="3" Y="628"/>
         <UsageCount Value="21"/>
+        <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="StructuraTypes.pas"/>
@@ -115,14 +121,18 @@
       </Unit>
       <Unit>
         <Filename Value="../../lazarus/lcl/include/control.inc"/>
-        <IsVisibleTab Value="True"/>
-        <TopLine Value="2830"/>
+        <TopLine Value="2832"/>
         <CursorPos Y="2846"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit>
     </Units>
-    <JumpHistory HistoryIndex="-1"/>
+    <JumpHistory>
+      <Position>
+        <Filename Value="../../lazarus/lcl/include/control.inc"/>
+        <Caret Line="2846" TopLine="2832"/>
+      </Position>
+    </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>

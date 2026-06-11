@@ -6,12 +6,14 @@ unit SettingsDialogUnit;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, StdCtrls, ExtCtrls, ComCtrls, Dialogs,
-  AppSettings, OfficeDetection;
+  Classes, SysUtils, Forms, Controls, StdCtrls, ExtCtrls, ComCtrls, Spin,
+  Dialogs, AppSettings, OfficeDetection;
 
 type
   TSettingsDialogForm = class(TForm)
     AddWorkflowButton: TButton;
+    BackupKeepDaysEdit: TSpinEdit;
+    BackupKeepDaysLabel: TLabel;
     CancelButton: TButton;
     DefaultProjectFolderEdit: TEdit;
     DefaultProjectFolderLabel: TLabel;
@@ -24,6 +26,8 @@ type
     LibreOfficeStateLabel: TLabel;
     LibreOfficeTestButton: TButton;
     MainPageControl: TPageControl;
+    NumberFormatCombo: TComboBox;
+    NumberFormatLabel: TLabel;
     OkButton: TButton;
     PreferredEditorEdit: TEdit;
     PreferredEditorLabel: TLabel;
@@ -243,6 +247,11 @@ begin
     WordEdit.Text := FWorkingCopy.WordPathOverride;
     LibreOfficeEdit.Text := FWorkingCopy.LibreOfficePathOverride;
     TextMakerEdit.Text := FWorkingCopy.TextMakerPathOverride;
+    if (FWorkingCopy.ChapterNumberDigits >= 1) and (FWorkingCopy.ChapterNumberDigits <= 3) then
+      NumberFormatCombo.ItemIndex := FWorkingCopy.ChapterNumberDigits - 1
+    else
+      NumberFormatCombo.ItemIndex := 1;
+    BackupKeepDaysEdit.Value := FWorkingCopy.DailyBackupKeepDays;
     RefreshWorkflowList;
     RefreshProgramState;
 
@@ -255,6 +264,9 @@ begin
     FWorkingCopy.WordPathOverride := Trim(WordEdit.Text);
     FWorkingCopy.LibreOfficePathOverride := Trim(LibreOfficeEdit.Text);
     FWorkingCopy.TextMakerPathOverride := Trim(TextMakerEdit.Text);
+    if NumberFormatCombo.ItemIndex >= 0 then
+      FWorkingCopy.ChapterNumberDigits := NumberFormatCombo.ItemIndex + 1;
+    FWorkingCopy.DailyBackupKeepDays := BackupKeepDaysEdit.Value;
     FWorkingCopy.EnsureDefaultWorkflowButtons;
     FSettings.Assign(FWorkingCopy);
   finally

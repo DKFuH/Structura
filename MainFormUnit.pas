@@ -62,6 +62,7 @@ type
     function AbsoluteProjectNotesFileName: string;
     function LoadTextFileSafe(const AFileName: string): string;
     procedure SaveTextFileSafe(const AFileName, AText: string);
+    function FormatChapterNumber(ASequence: Integer): string;
     function ChapterSequenceForIndex(AIndex: Integer): Integer;
     function ChapterSequenceForItem(AItem: TStructuraItem): Integer;
     function BuildChapterFileName(AItem: TStructuraItem; AListIndex: Integer): string;
@@ -69,13 +70,13 @@ type
     function EnsureUniqueRelativeFileName(const ARelative: string): string;
     function MakeSafeFileNamePart(const AValue: string): string;
     function CreateBackupCopy(const AAbsoluteFileName: string): Boolean;
+    procedure EnsureDailyZipBackup;
     function RenameChapterFile(AItem: TStructuraItem; AListIndex: Integer): Boolean;
     function RenumberChapterFiles: Boolean;
     function ChapterWordCount(AItem: TStructuraItem): Integer;
     function ProjectWordCount: Integer;
     function FileModifiedText(const AFileName: string): string;
     function ProjectStatusSummary: string;
-    function OfficeAvailabilitySummary: string;
     function BuildWorkflowCopyText(AConfig: TWorkflowButtonConfig): string;
     function BuildMarkdownCopyText: string;
     procedure OpenCurrentChapterWithExecutable(const AExecutable: string);
@@ -113,7 +114,6 @@ type
     ProjectAuthorLabel: TLabel;
     ProjectStatsLabel: TLabel;
     ProjectStatusLabel: TLabel;
-    OfficeSummaryLabel: TLabel;
     ProjectNotesLabel: TLabel;
     ProjectNotesMemo: TMemo;
     ChapterHeadingLabel: TLabel;
@@ -176,7 +176,7 @@ implementation
 {$R *.lfm}
 
 uses
-  LCLIntf, LCLType, FileUtil, Process, Clipbrd, StrUtils, Math,
+  LCLIntf, LCLType, FileUtil, Process, Clipbrd, StrUtils, Math, DateUtils, Zipper,
   ProjectStore, ProjectDialogUnit, ElementDialogUnit, DocumentWorkflow,
   DocxPreview, SettingsStore, SettingsDialogUnit, FirstRunWizardUnit,
   ImportProjectDialogUnit;
@@ -184,6 +184,18 @@ uses
 function NormalizeStoredPathForCompare(const APath: string): string;
 begin
   Result := StringReplace(APath, '\', '/', [rfReplaceAll]);
+end;
+
+function FileIsLockedForRename(const AFileName: string): Boolean;
+var
+  Handle: THandle;
+begin
+  if not FileExists(AFileName) then
+    Exit(False);
+  Handle := FileOpen(AFileName, fmOpenReadWrite or fmShareExclusive);
+  Result := Handle = THandle(-1);
+  if not Result then
+    FileClose(Handle);
 end;
 
 function TryLaunchDetachedProcess(const AExecutable: string;
@@ -535,6 +547,7 @@ begin
     TSettingsStore.Save(FSettings);
   end;
   UpdateStatus('Projekt geöffnet: ' + FProject.Title);
+  EnsureDailyZipBackup;
 end;
 
 procedure TMainForm.SaveProject;
@@ -607,7 +620,6 @@ begin
     ProjectAuthorLabel.Caption := '';
     ProjectStatsLabel.Caption := '';
     ProjectStatusLabel.Caption := '';
-    OfficeSummaryLabel.Visible := False;
     ProjectNotesLabel.Visible := False;
     ProjectNotesMemo.Visible := False;
     ProjectNotesMemo.Text := '';
@@ -628,7 +640,6 @@ begin
   ClearProjectCards;
 
   CoverImage.Visible := True;
-  OfficeSummaryLabel.Visible := False;
   ProjectNotesLabel.Visible := True;
   ProjectNotesMemo.Visible := True;
   ChapterCount := 0;
@@ -687,7 +698,7 @@ begin
     begin
       Sequence := ChapterSequenceForItem(Item);
       FileName := AbsoluteItemFileName(Item);
-      ChapterHeadingLabel.Caption := Format('%0.2d  %s', [Sequence, Item.Title]);
+      ChapterHeadingLabel.Caption := Format('%s  %s', [FormatChapterNumber(Sequence), Item.Title]);
       Meta.Add('Datei: ' + Item.FileName);
       Meta.Add('Geändert: ' + FileModifiedText(FileName));
       Meta.Add('Wortzahl: ' + IntToStr(ChapterWordCount(Item)));
@@ -874,6 +885,17 @@ begin
   end;
 end;
 
+function TMainForm.FormatChapterNumber(ASequence: Integer): string;
+var
+  Digits: Integer;
+begin
+  Digits := 2;
+  if Assigned(FSettings) and (FSettings.ChapterNumberDigits >= 1) and
+     (FSettings.ChapterNumberDigits <= 3) then
+    Digits := FSettings.ChapterNumberDigits;
+  Result := Format('%.*d', [Digits, ASequence]);
+end;
+
 function TMainForm.ChapterSequenceForIndex(AIndex: Integer): Integer;
 var
   I: Integer;
@@ -913,7 +935,7 @@ begin
   Sequence := ChapterSequenceForIndex(AListIndex);
   Result := RelativeProjectPath([
     'chapters',
-    Format('%0.2d_%s%s', [Sequence, MakeSafeFileNamePart(AItem.Title), Extension])
+    Format('%s_%s%s', [FormatChapterNumber(Sequence), MakeSafeFileNamePart(AItem.Title), Extension])
   ]);
 end;
 
@@ -922,7 +944,7 @@ begin
   if AItem.ItemType = sitDivider then
     Exit('--- ' + AItem.Title + ' ---');
 
-  Result := Format('%0.2d  %s', [ChapterSequenceForIndex(AIndex), AItem.Title]);
+  Result := Format('%s  %s', [FormatChapterNumber(ChapterSequenceForIndex(AIndex)), AItem.Title]);
   if Trim(AItem.Status) <> '' then
     Result := Result + '  [' + AItem.Status + ']';
 end;
@@ -984,6 +1006,97 @@ begin
   Result := CopyFile(AAbsoluteFileName, TargetFile, [cffOverwriteFile]);
 end;
 
+procedure TMainForm.EnsureDailyZipBackup;
+
+  // Datum aus Dateinamen der Form JJJJ-MM-TT.zip lesen; False bei Fremddateien.
+  function TryDateFromZipName(const AFileName: string; out ADate: TDateTime): Boolean;
+  var
+    Base: string;
+    Y, M, D: Integer;
+  begin
+    Result := False;
+    Base := ChangeFileExt(ExtractFileName(AFileName), '');
+    if Length(Base) <> 10 then
+      Exit;
+    if not TryStrToInt(Copy(Base, 1, 4), Y) then Exit;
+    if not TryStrToInt(Copy(Base, 6, 2), M) then Exit;
+    if not TryStrToInt(Copy(Base, 9, 2), D) then Exit;
+    Result := TryEncodeDate(Y, M, D, ADate);
+  end;
+
+  procedure PruneOldDailyBackups(const ADailyFolder: string);
+  var
+    Zips: TStringList;
+    I, KeepDays: Integer;
+    ZipDate: TDateTime;
+  begin
+    KeepDays := 14;
+    if Assigned(FSettings) and (FSettings.DailyBackupKeepDays >= 1) then
+      KeepDays := FSettings.DailyBackupKeepDays;
+    Zips := TStringList.Create;
+    try
+      FindAllFiles(Zips, ADailyFolder, '*.zip', False);
+      for I := 0 to Zips.Count - 1 do
+        if TryDateFromZipName(Zips[I], ZipDate) then
+          if Trunc(Now) - Trunc(ZipDate) > KeepDays then
+            DeleteFile(Zips[I]);
+    finally
+      Zips.Free;
+    end;
+  end;
+
+var
+  DailyFolder, ZipFileName, ProjectRoot, BackupRoot, Relative: string;
+  Files: TStringList;
+  Zip: TZipper;
+  I: Integer;
+begin
+  if not Assigned(FProject) then
+    Exit;
+
+  ProjectRoot := IncludeTrailingPathDelimiter(FProject.FolderPath);
+  BackupRoot := ProjectRoot + 'backup';
+  DailyFolder := BackupRoot + PathDelim + 'daily';
+  ZipFileName := DailyFolder + PathDelim + FormatDateTime('yyyy-mm-dd', Now) + '.zip';
+
+  // Pro Tag genau ein Backup — existiert es bereits, nichts tun.
+  if FileExists(ZipFileName) then
+    Exit;
+
+  Files := TStringList.Create;
+  Zip := TZipper.Create;
+  try
+    try
+      FindAllFiles(Files, FProject.FolderPath, '*', True);
+      Zip.FileName := ZipFileName;
+      for I := 0 to Files.Count - 1 do
+      begin
+        // Den Backup-Ordner selbst nie mitsichern, sonst wächst jedes Backup
+        // um alle vorherigen.
+        if AnsiStartsText(BackupRoot + PathDelim, Files[I]) then
+          Continue;
+        Relative := ExtractRelativePath(ProjectRoot, Files[I]);
+        Zip.Entries.AddFileEntry(Files[I],
+          StringReplace(Relative, '\', '/', [rfReplaceAll]));
+      end;
+      if Zip.Entries.Count > 0 then
+      begin
+        ForceDirectories(DailyFolder);
+        Zip.ZipAllFiles;
+        PruneOldDailyBackups(DailyFolder);
+        UpdateStatus('Tagesbackup erstellt: backup\daily\' +
+          ExtractFileName(ZipFileName));
+      end;
+    except
+      on E: Exception do
+        UpdateStatus('Tagesbackup fehlgeschlagen: ' + E.Message);
+    end;
+  finally
+    Zip.Free;
+    Files.Free;
+  end;
+end;
+
 function TMainForm.RenameChapterFile(AItem: TStructuraItem; AListIndex: Integer): Boolean;
 var
   OldAbsolute: string;
@@ -1009,6 +1122,16 @@ begin
   if FileExists(NewAbsolute) then
     NewRelative := EnsureUniqueRelativeFileName(NewRelative);
   NewAbsolute := TProjectStore.AbsolutePath(FProject.FolderPath, NewRelative);
+
+  if FileIsLockedForRename(OldAbsolute) then
+  begin
+    MessageDlg('Datei ist in Verwendung',
+      'Die Kapiteldatei "' + ExtractFileName(OldAbsolute) + '" ist gerade in einem ' +
+      'anderen Programm geöffnet oder schreibgeschützt.' + LineEnding +
+      'Bitte schließe die Datei und versuche es erneut.',
+      mtError, [mbOK], 0);
+    Exit(False);
+  end;
 
   if not CreateBackupCopy(OldAbsolute) then
   begin
@@ -1040,6 +1163,26 @@ begin
   Result := True;
   if not Assigned(FProject) then
     Exit;
+
+  // Vorab prüfen, ob eine der Kapiteldateien gesperrt ist, bevor irgendetwas
+  // umbenannt wird — sonst bliebe das Projekt halb umbenannt zurück.
+  for I := 0 to FProject.Count - 1 do
+  begin
+    Item := FProject[I];
+    if Item.ItemType <> sitChapter then
+      Continue;
+    OldAbsolute := AbsoluteItemFileName(Item);
+    if FileIsLockedForRename(OldAbsolute) then
+    begin
+      MessageDlg('Datei ist in Verwendung',
+        'Die Kapiteldatei "' + ExtractFileName(OldAbsolute) + '" ist gerade in einem ' +
+        'anderen Programm geöffnet oder schreibgeschützt.' + LineEnding +
+        'Bitte schließe die Datei und starte die Umbenennung erneut. ' +
+        'Es wurde noch keine Datei verändert.',
+        mtError, [mbOK], 0);
+      Exit(False);
+    end;
+  end;
 
   TempNames := TStringList.Create;
   FinalNames := TStringList.Create;
@@ -1168,16 +1311,6 @@ begin
   end;
   Result := Format('%d final, %d in Arbeit, %d mit Problemstatus',
     [FinalCount, WorkingCount, ProblemCount]);
-end;
-
-function TMainForm.OfficeAvailabilitySummary: string;
-begin
-  Result := 'Verfügbare Programme:' + LineEnding +
-    'Standard-DOCX: über Betriebssystem' + LineEnding +
-    'Word: ' + IfThen(FOfficeTargets.WordPath <> '', 'gefunden', 'nicht gefunden') + LineEnding +
-    'LibreOffice: ' + IfThen(FOfficeTargets.LibreOfficePath <> '', 'gefunden', 'nicht gefunden') + LineEnding +
-    'TextMaker: ' + IfThen(FOfficeTargets.TextMakerPath <> '', 'gefunden', 'nicht gefunden') + LineEnding +
-    'PDF-Vorschau: nur über LibreOffice verfügbar';
 end;
 
 function TMainForm.BuildWorkflowCopyText(AConfig: TWorkflowButtonConfig): string;
@@ -2052,9 +2185,12 @@ begin
 end;
 
 procedure TMainForm.SettingsClick(Sender: TObject);
+var
+  OldDigits: Integer;
 begin
   if not Assigned(FSettings) then
     Exit;
+  OldDigits := FSettings.ChapterNumberDigits;
   if EditAppSettings(FSettings) then
   begin
     FOfficeTargets := DetectOfficeTargets;
@@ -2066,6 +2202,31 @@ begin
     RefreshProjectView;
     TSettingsStore.Save(FSettings);
     UpdateStatus('Einstellungen gespeichert.');
+
+    // Formatwechsel benennt niemals stillschweigend Dateien um — immer nachfragen.
+    if Assigned(FProject) and (FSettings.ChapterNumberDigits <> OldDigits) then
+    begin
+      if MessageDlg('Nummerierungsformat geändert',
+        'Das Nummerierungsformat wurde geändert.' + LineEnding +
+        'Sollen die vorhandenen Kapiteldateien jetzt an das neue Format ' +
+        'angepasst werden?' + LineEnding + LineEnding +
+        'Vor der Umbenennung wird ein Backup erstellt.',
+        mtConfirmation, [mbYes, mbNo], 0) = mrYes then
+      begin
+        if RenumberChapterFiles then
+        begin
+          SaveProject;
+          RefreshAll;
+          UpdateStatus('Kapiteldateien an das neue Nummerierungsformat angepasst.');
+        end
+        else
+          MessageDlg('Umbenennung unvollständig',
+            'Einige Kapiteldateien konnten nicht umbenannt werden.',
+            mtWarning, [mbOK], 0);
+      end
+      else
+        UpdateStatus('Neues Format wird erst bei der nächsten Umbenennung angewendet.');
+    end;
   end;
 end;
 

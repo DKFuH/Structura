@@ -13,6 +13,10 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 - ROADMAP.md with planned milestones and explicit non-goals
 - German README (README.de.md)
+- Configurable chapter number format in settings: 1, 2, or 3 digits (`1_`, `01_`, `001_`) — applies to filenames, sidebar, and chapter heading
+- Proactive file lock check before renaming chapter files: if a chapter DOCX is open in another program, the rename is refused with a clear message before any file is touched (single rename and bulk renumbering)
+- Daily zipped project backup: on first open of a project each day, the entire project (excluding the backup folder) is archived to `backup/daily/YYYY-MM-DD.zip`; backups older than a configurable retention (default 14 days, settable in settings) are deleted automatically
+- Changing the chapter number format asks explicitly whether existing chapter files should be renamed — nothing is renamed silently
 
 ### Changed
 
@@ -20,6 +24,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 - New project dialog redesigned: root folder (Hauptordner) and project subfolder (Unterordner) are now separate fields — the subfolder name is generated automatically from the project title
 - Warning shown when creating a project in a folder that already contains a `structura.json`
 - After creating a project, the root folder is remembered (not the new project's subfolder)
+- Removed unused office diagnostic label from the project overview (leftover from the pre-0.1.0 startup diagnostics)
 
 ---
 

@@ -36,6 +36,8 @@ type
     WordPathOverride: string;
     LibreOfficePathOverride: string;
     TextMakerPathOverride: string;
+    ChapterNumberDigits: Integer; // Stellen der Kapitelnummer im Dateinamen (1..3)
+    DailyBackupKeepDays: Integer; // Tagesbackups älter als X Tage werden gelöscht
     constructor Create;
     destructor Destroy; override;
     procedure Clear;
@@ -116,6 +118,8 @@ begin
   inherited Create;
   FWorkflowButtons := TObjectList.Create(True);
   FRecentProjects := TStringList.Create;
+  ChapterNumberDigits := 2;
+  DailyBackupKeepDays := 14;
 end;
 
 destructor TAppSettings.Destroy;
@@ -132,6 +136,8 @@ begin
   WordPathOverride := '';
   LibreOfficePathOverride := '';
   TextMakerPathOverride := '';
+  ChapterNumberDigits := 2;
+  DailyBackupKeepDays := 14;
   FWorkflowButtons.Clear;
   FRecentProjects.Clear;
 end;
@@ -150,6 +156,8 @@ begin
   WordPathOverride := Source.WordPathOverride;
   LibreOfficePathOverride := Source.LibreOfficePathOverride;
   TextMakerPathOverride := Source.TextMakerPathOverride;
+  ChapterNumberDigits := Source.ChapterNumberDigits;
+  DailyBackupKeepDays := Source.DailyBackupKeepDays;
 
   for I := 0 to Source.RecentProjectCount - 1 do
     FRecentProjects.Add(Source.RecentProjects[I]);
@@ -268,6 +276,8 @@ begin
   Result.Add('wordPathOverride', WordPathOverride);
   Result.Add('libreOfficePathOverride', LibreOfficePathOverride);
   Result.Add('textMakerPathOverride', TextMakerPathOverride);
+  Result.Add('chapterNumberDigits', ChapterNumberDigits);
+  Result.Add('dailyBackupKeepDays', DailyBackupKeepDays);
   Recent := TJSONArray.Create;
   for I := 0 to FRecentProjects.Count - 1 do
     Recent.Add(FRecentProjects[I]);
@@ -293,6 +303,12 @@ begin
   WordPathOverride := AObject.Get('wordPathOverride', '');
   LibreOfficePathOverride := AObject.Get('libreOfficePathOverride', '');
   TextMakerPathOverride := AObject.Get('textMakerPathOverride', '');
+  ChapterNumberDigits := AObject.Get('chapterNumberDigits', 2);
+  if (ChapterNumberDigits < 1) or (ChapterNumberDigits > 3) then
+    ChapterNumberDigits := 2;
+  DailyBackupKeepDays := AObject.Get('dailyBackupKeepDays', 14);
+  if (DailyBackupKeepDays < 1) or (DailyBackupKeepDays > 365) then
+    DailyBackupKeepDays := 14;
 
   RecentData := AObject.Find('recentProjects');
   if RecentData is TJSONArray then

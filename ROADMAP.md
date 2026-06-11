@@ -6,10 +6,17 @@ Structura follows a slow, deliberate release pace. Each milestone stabilizes bef
 
 The goal of the 0.1.x series is a reliable, calm desktop workflow for authors who already work with DOCX files.
 
-- clean up the project dialog (root folder + subfolder separation)
-- overwrite warning when creating a project in an existing folder
+**Done in 0.1.0:**
+- project dialog with root folder + subfolder separation
+- auto-detection of Word, LibreOffice, TextMaker — detected paths pre-filled in settings
+- workflow buttons grouped into dropdowns (Open, Review, Copy, Export)
+- clean startup view without diagnostic output
+- configurable workflow buttons for external review tools
+
+**Planned for 0.1.x:**
 - improved SampleProject layout
-- documentation and screenshots
+- screenshots in documentation
+- long chapter names: truncate or wrap cleanly in sidebar
 
 ## 0.2.x — Writing workflow
 

@@ -3,7 +3,7 @@
 ## 0. Erledigt
 
 - [x] `.gitignore` angelegt / bereinigt
-- [x] MPL-2.0-Lizenz eingebunden
+- [x] Lizenz festgelegt: MIT (ursprünglich MPL-2.0, nach 0.1.0 auf MIT umgestellt)
 - [x] Grundidee festgelegt: Structura ist ein Buch-Cockpit, kein Word-Ersatz
 - [x] Projekt läuft grundsätzlich bereits
 - [x] Ziel: lokale Windows-Anwendung für Buchprojekte mit DOCX-Kapiteln
@@ -33,7 +33,7 @@ Ziel: Das Projekt muss nach einem frischen Clone vollständig kompilierbar sein.
 - [x] Noch nicht vorhandene Funktionen nicht als fertig darstellen
 - [x] Installationshinweise ergänzen
 - [x] Build-Hinweise für Lazarus ergänzen
-- [x] Lizenzhinweis MPL-2.0 ergänzen
+- [x] Lizenzhinweis MIT ergänzen
 - [ ] Screenshots ergänzen
 - [x] Roadmap ergänzen
 
@@ -50,7 +50,7 @@ Structura ist ein lokales Windows-Tool zur Verwaltung von Buchprojekten mit einz
 - [x] Projekt ist immer ein echter Ordner
 - [x] Neues Projekt anlegen
 - [x] Bestehendes Projekt öffnen
-- [ ] Projektordner im Explorer öffnen
+- [x] Projektordner im Explorer öffnen
 - [x] Projektdatei im Projektordner speichern
 - [x] Fehlermeldung bei ungültigem Projektordner
 
@@ -112,7 +112,7 @@ Beispiele:
 - [x] Nummerierung wird nach Verschieben aktualisiert
 - [x] Kapitelname bleibt beim Verschieben erhalten
 - [x] Trenner werden nicht als Kapitel gezählt
-- [ ] Nummerierungsformat konfigurierbar machen
+- [x] Nummerierungsformat konfigurierbar machen
 
 Beispiele:
 
@@ -124,10 +124,10 @@ Beispiele:
 
 - [x] Wenn Kapiteltitel geändert wird, DOCX-Datei ebenfalls umbenennen
 - [x] Ungültige Zeichen aus Dateinamen entfernen
-- [ ] Umlaute sauber behandeln
+- [x] Umlaute sauber behandeln
 - [x] Doppelte Dateinamen verhindern
 - [x] Vor Umbenennung Backup erstellen
-- [ ] Prüfen, ob Datei gerade geöffnet oder gesperrt ist
+- [x] Prüfen, ob Datei gerade geöffnet oder gesperrt ist
 
 ### 5.3 Dateiname bei Positionsänderung
 
@@ -300,7 +300,7 @@ Beispiel ChatGPT-Tiefenprüfung:
 - [x] reinen Kapiteltext kopieren
 - [x] Kapiteltitel plus Text kopieren
 - [x] Prüfprompt plus Text kopieren
-- [ ] Markdown-Version kopieren
+- [x] Markdown-Version kopieren
 - [x] Hinweis anzeigen: Text wurde kopiert
 - [x] Fehler anzeigen, wenn kein Kapitel ausgewählt ist
 - [x] Fehler anzeigen, wenn Text nicht extrahiert werden kann
@@ -348,7 +348,7 @@ Wenn kein Kapitel ausgewählt ist, zeigt Structura eine Projektübersicht.
 
 - [x] Cover beim Projektstart wählbar machen
 - [ ] Blanco-Cover verwenden, wenn kein Cover gewählt wurde
-- [ ] Cover nachträglich ändern können
+- [x] Cover nachträglich ändern können
 - [x] Coverbild in Projektordner kopieren
 - [x] fehlendes Cover erkennen
 - [x] saubere Skalierung in der Projektansicht
@@ -363,8 +363,8 @@ Wenn kein Kapitel ausgewählt ist, zeigt Structura eine Projektübersicht.
 - [x] Einstellungsdialog anlegen
 - [x] Standard-Projektordner
 - [ ] bevorzugter DOCX-Editor
-- [ ] Nummerierungsformat
-- [ ] Backup-Verhalten
+- [x] Nummerierungsformat
+- [x] Backup-Verhalten (Aufbewahrungsdauer der Tagesbackups)
 - [ ] Autosave-Verhalten
 - [ ] Sprache der Oberfläche optional vorbereiten
 
@@ -374,7 +374,7 @@ Wenn kein Kapitel ausgewählt ist, zeigt Structura eine Projektübersicht.
 - [x] Pfad zu LibreOffice
 - [x] Pfad zu SoftMaker TextMaker
 - [ ] Standardbrowser / Browserverhalten
-- [ ] Programmpfade automatisch suchen
+- [x] Programmpfade automatisch suchen
 - [x] manuelle Pfadangabe erlauben
 - [ ] Pfade testen
 
@@ -403,6 +403,8 @@ Backups sollen erstellt werden vor:
 
 ### 16.2 Backup-Struktur
 
+- [x] tägliches ZIP-Backup beim Projektöffnen (`backup/daily/JJJJ-MM-TT.zip`)
+- [x] alte Tagesbackups automatisch löschen (Aufbewahrungsdauer einstellbar, Standard 14 Tage)
 - [x] Backupordner im Projektordner
 - [x] Zeitstempelordner pro Sicherung
 - [x] betroffene Dateien kopieren
@@ -422,8 +424,8 @@ Structura soll klare Fehlermeldungen anzeigen bei:
 - [x] Projektdatei fehlt
 - [x] Projektdatei beschädigt
 - [x] Kapiteldatei fehlt
-- [ ] Kapiteldatei ist geöffnet
-- [ ] Kapiteldatei ist schreibgeschützt
+- [x] Kapiteldatei ist geöffnet
+- [x] Kapiteldatei ist schreibgeschützt
 - [x] Ziel-Dateiname existiert bereits
 - [ ] Projektordner ist nicht beschreibbar
 - [ ] Notizdatei fehlt
@@ -603,7 +605,7 @@ Diese Punkte sollen bewusst nicht in Version 0.1 umgesetzt werden:
 - [ ] Screenshots
 - [x] Changelog
 - [x] Version `0.1.0`
-- [ ] erstes GitHub-Release
+- [x] erstes GitHub-Release (0.1.0)
 
 ### Phase 6 - später
 
@@ -617,12 +619,6 @@ Diese Punkte sollen bewusst nicht in Version 0.1 umgesetzt werden:
 
 ## Kurzfazit
 
-Der nächste Meilenstein ist:
+Version 0.1.0 ist released. Die Kernfunktionen sind stabil: Projektverwaltung, Kapitelstruktur, Textvorschau, Notizen, Statussystem, frei konfigurierbare Workflow-Buttons, Office-Erkennung.
 
-Structura muss vollständig kompilierbar, projektstabil, dateisicher und ohne feste LibreOffice-Abhängigkeit nutzbar sein.
-
-Die wichtigste neue Erweiterung ist der frei konfigurierbare Workflow-Button:
-
-Kapiteltext kopieren, frei definierten Link oder ein Programm öffnen, optional mit eigenem Prüfprompt.
-
-Damit unterstützt Structura Grammarly, LanguageTool, Duden Mentor, ChatGPT oder andere Dienste, ohne sich fest an einen Anbieter zu binden.
+Der nächste Meilenstein ist 0.1.1: UI-Bereinigung, offene Komfortlücken schließen, Doku schärfen.
