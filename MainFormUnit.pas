@@ -546,31 +546,31 @@ end;
 
 procedure TMainForm.ConfigureButtonGlyphs;
 begin
-  LoadButtonGlyph(NewButton, 'assets\buttons\new_project.bmp');
-  LoadButtonGlyph(OpenButton, 'assets\buttons\open_project.bmp');
-  LoadButtonGlyph(SettingsButton, 'assets\buttons\edit_item.bmp');
-  LoadButtonGlyph(AddButton, 'assets\buttons\add_item.bmp');
-  LoadButtonGlyph(EditButton, 'assets\buttons\edit_item.bmp');
-  LoadButtonGlyph(DeleteButton, 'assets\buttons\delete_item.bmp');
-  LoadButtonGlyph(OpenChapterButton, 'assets\buttons\open_chapter.bmp');
-  LoadButtonGlyph(OpenFolderButton, 'assets\buttons\open_folder.bmp');
-  LoadButtonGlyph(PdfPreviewButton, 'assets\buttons\pdf_preview.bmp');
-  LoadButtonGlyph(ExportButton, 'assets\buttons\export_master.bmp');
+  LoadButtonGlyph(NewButton, 'assets\buttons\new_project.png');
+  LoadButtonGlyph(OpenButton, 'assets\buttons\open_project.png');
+  LoadButtonGlyph(SettingsButton, 'assets\buttons\settings.png');
+  LoadButtonGlyph(AddButton, 'assets\buttons\add_item.png');
+  LoadButtonGlyph(EditButton, 'assets\buttons\edit_item.png');
+  LoadButtonGlyph(DeleteButton, 'assets\buttons\delete_item.png');
+  LoadButtonGlyph(OpenChapterButton, 'assets\buttons\open_chapter.png');
+  LoadButtonGlyph(OpenFolderButton, 'assets\buttons\open_folder.png');
+  LoadButtonGlyph(PdfPreviewButton, 'assets\buttons\pdf_preview.png');
+  LoadButtonGlyph(ExportButton, 'assets\buttons\export_master.png');
 end;
 
 procedure TMainForm.LoadButtonGlyph(AButton: TBitBtn; const AFileName: string);
 var
-  Bitmap: TBitmap;
+  Picture: TPicture;
   FullPath: string;
 begin
   FullPath := ExpandFileName(AFileName);
   if not FileExists(FullPath) then
     Exit;
-  Bitmap := TBitmap.Create;
+  Picture := TPicture.Create;
   try
     try
-      Bitmap.LoadFromFile(FullPath);
-      AButton.Glyph.Assign(Bitmap);
+      Picture.LoadFromFile(FullPath);
+      AButton.Glyph.Assign(Picture.Graphic);
       AButton.NumGlyphs := 1;
       AButton.Layout := blGlyphLeft;
       AButton.Spacing := 6;
@@ -578,7 +578,7 @@ begin
       AButton.Glyph.Clear;
     end;
   finally
-    Bitmap.Free;
+    Picture.Free;
   end;
 end;
 
