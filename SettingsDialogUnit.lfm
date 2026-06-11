@@ -1,17 +1,17 @@
 object SettingsDialogForm: TSettingsDialogForm
   Left = 540
-  Height = 560
+  Height = 624
   Top = 220
   Width = 760
   BorderStyle = bsDialog
   Caption = 'Einstellungen'
-  ClientHeight = 560
+  ClientHeight = 624
   ClientWidth = 760
   Position = poScreenCenter
   LCLVersion = '4.99.0.0'
   object SettingsPanel: TPanel
     Left = 0
-    Height = 560
+    Height = 624
     Top = 0
     Width = 760
     Align = alClient
@@ -19,7 +19,7 @@ object SettingsDialogForm: TSettingsDialogForm
     TabOrder = 0
     object MainPageControl: TPageControl
       Left = 16
-      Height = 500
+      Height = 560
       Top = 16
       Width = 728
       ActivePage = GeneralTab
@@ -206,8 +206,8 @@ object SettingsDialogForm: TSettingsDialogForm
         end
         object ProgramStatusLabel: TLabel
           Left = 16
-          Height = 72
-          Top = 420
+          Height = 100
+          Top = 424
           Width = 680
           AutoSize = False
           Caption = 'Programmstatus'
@@ -284,7 +284,7 @@ object SettingsDialogForm: TSettingsDialogForm
     object OkButton: TButton
       Left = 562
       Height = 25
-      Top = 524
+      Top = 588
       Width = 86
       Caption = 'Speichern'
       ModalResult = 1
@@ -293,7 +293,7 @@ object SettingsDialogForm: TSettingsDialogForm
     object CancelButton: TButton
       Left = 658
       Height = 25
-      Top = 524
+      Top = 588
       Width = 86
       Caption = 'Abbrechen'
       ModalResult = 2
