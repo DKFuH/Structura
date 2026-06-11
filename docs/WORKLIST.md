@@ -347,7 +347,7 @@ Wenn kein Kapitel ausgewählt ist, zeigt Structura eine Projektübersicht.
 ## 14. Cover
 
 - [x] Cover beim Projektstart wählbar machen
-- [ ] Blanco-Cover verwenden, wenn kein Cover gewählt wurde
+- [x] Blanco-Cover verwenden, wenn kein Cover gewählt wurde
 - [x] Cover nachträglich ändern können
 - [x] Coverbild in Projektordner kopieren
 - [x] fehlendes Cover erkennen
