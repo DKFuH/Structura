@@ -57,7 +57,7 @@ A view built for the revision phase, not the drafting phase.
 - export options: title page, chapter numbering, divider headings
 - chapter selection for export
 - review export for Grammarly/ChatGPT workflows (one text file per chapter)
-- structure-aware import: recursive subfolder scan, subfolders become part dividers, reorder before importing
+- structure-aware import: pick a source folder anywhere, recursive subfolder scan, subfolders become part dividers, reorder before importing; creates a new project in the project root and copies the files in (originals untouched)
 
 ## 1.0.0 — Ready for real book projects
 

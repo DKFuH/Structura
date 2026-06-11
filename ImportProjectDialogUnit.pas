@@ -361,7 +361,7 @@ begin
   Lbl := TLabel.Create(Self);
   Lbl.Parent := Self;
   Lbl.Left := MARGIN; Lbl.Top := Y;
-  Lbl.Caption := 'Projektordner (mit DOCX-Dateien)';
+  Lbl.Caption := 'Quellordner mit den DOCX-Dateien (wird in ein neues Projekt kopiert)';
   Inc(Y, 18);
 
   FFolderEdit := TEdit.Create(Self);

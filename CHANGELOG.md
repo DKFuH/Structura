@@ -11,7 +11,8 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ### Changed
 
-- Import from an existing folder is now structure-aware: it scans subfolders recursively, turns each subfolder into a part divider (e.g. `Teil 1/` → "Teil 1"), skips Structura's own `backup`/`export`/`notes` folders and Word lock files (`~$…`), and lets you reorder entries with ▲▼ before importing. `.docx` files anywhere in the tree are found, not just the root and `chapters/`
+- Import now creates a proper new project in your project root instead of writing `structura.json` into the source folder. You pick a source folder anywhere (where your manuscript DOCX live); Structura scans it, copies the selected files into a new project subfolder (numbered `chapters/`), and leaves the originals untouched
+- Import is structure-aware: it scans subfolders recursively, turns each subfolder into a part divider (e.g. `Teil 1/` → "Teil 1"), skips Structura's own `backup`/`export`/`notes` folders and Word lock files (`~$…`), and lets you reorder entries with ▲▼ before importing
 
 ### Fixed
 

@@ -2791,17 +2791,20 @@ end;
 procedure TMainForm.ImportProjectClick(Sender: TObject);
 var
   Res: TImportResult;
-  DefaultDir: string;
+  RootFolder, TargetFolder, BaseName, SourceRoot, CoverExt: string;
   Project: TStructuraProject;
-  I: Integer;
-  ChapterTitle, RelFile: string;
+  I, Seq, ChapterCount: Integer;
+  ChapterTitle, SourceFile, TargetRel, TargetAbs: string;
   Item: TStructuraItem;
 begin
-  DefaultDir := '';
+  // Hauptordner (Projekt-Wurzel), unter dem das importierte Projekt entsteht
+  RootFolder := '';
   if Assigned(FSettings) then
-    DefaultDir := FSettings.DefaultProjectFolder;
+    RootFolder := Trim(FSettings.DefaultProjectFolder);
+  if RootFolder = '' then
+    RootFolder := GetUserDir;
 
-  Res := ShowImportDialog(Self, DefaultDir);
+  Res := ShowImportDialog(Self, '');
   if not Res.Confirmed then
   begin
     FreeAndNil(Res.SelectedFiles);
@@ -2809,33 +2812,48 @@ begin
   end;
 
   try
-    // Warnen falls structura.json schon existiert
-    if FileExists(TProjectStore.ProjectFileName(Res.FolderPath)) then
+    SourceRoot := IncludeTrailingPathDelimiter(Res.FolderPath);
+
+    // Zielordner = Wurzel + Unterordner aus dem Projekttitel, Kollision vermeiden
+    BaseName := MakeSafeFileNamePart(Res.Title);
+    TargetFolder := IncludeTrailingPathDelimiter(RootFolder) + BaseName;
+    Seq := 2;
+    while DirectoryExists(TargetFolder) and
+          FileExists(TProjectStore.ProjectFileName(TargetFolder)) do
     begin
-      if MessageDlg(
-        'Im gewählten Ordner existiert bereits ein Structura-Projekt.' +
-        LineEnding + 'Trotzdem importieren und überschreiben?',
-        mtConfirmation, [mbYes, mbNo], 0) <> mrYes then
-        Exit;
+      TargetFolder := IncludeTrailingPathDelimiter(RootFolder) +
+        BaseName + '_' + IntToStr(Seq);
+      Inc(Seq);
     end;
 
-    TProjectStore.EnsureProjectFolders(Res.FolderPath);
+    TProjectStore.EnsureProjectFolders(TargetFolder);
 
     Project := TStructuraProject.Create;
     try
-      Project.FolderPath := Res.FolderPath;
+      Project.FolderPath := TargetFolder;
       Project.Title      := Res.Title;
       Project.Author     := Res.Author;
 
-      // Cover suchen
-      if FileExists(IncludeTrailingPathDelimiter(Res.FolderPath) + 'cover.png') then
-        Project.CoverImagePath := 'cover.png'
-      else if FileExists(IncludeTrailingPathDelimiter(Res.FolderPath) + 'cover.jpg') then
-        Project.CoverImagePath := 'cover.jpg'
-      else if FileExists(IncludeTrailingPathDelimiter(Res.FolderPath) + 'cover.jpeg') then
-        Project.CoverImagePath := 'cover.jpeg';
+      // Cover aus dem Quellordner übernehmen, falls vorhanden
+      CoverExt := '';
+      if FileExists(SourceRoot + 'cover.png') then
+        CoverExt := 'png'
+      else if FileExists(SourceRoot + 'cover.jpg') then
+        CoverExt := 'jpg'
+      else if FileExists(SourceRoot + 'cover.jpeg') then
+        CoverExt := 'jpeg';
+      if CoverExt <> '' then
+      begin
+        CopyFile(SourceRoot + 'cover.' + CoverExt,
+          IncludeTrailingPathDelimiter(TargetFolder) + 'cover.' + CoverExt,
+          [cffOverwriteFile]);
+        Project.CoverImagePath := 'cover.' + CoverExt;
+      end;
 
-      // Kapitel und Teile (Trenner) in der gewählten Reihenfolge anlegen
+      // Kapitel und Teile in der gewählten Reihenfolge übernehmen; die DOCX
+      // werden in den chapters/-Ordner des neuen Projekts kopiert (Originale
+      // bleiben unangetastet) und sauber nummeriert.
+      ChapterCount := 0;
       for I := 0 to High(Res.Entries) do
       begin
         if Res.Entries[I].Kind = iekDivider then
@@ -2844,17 +2862,25 @@ begin
         end
         else
         begin
-          RelFile := Res.Entries[I].Data;
-          // Kapitelname: Dateiname ohne Pfad und ohne Erweiterung, bereinigt
-          ChapterTitle := TrimLeft(ChangeFileExt(ExtractFileName(RelFile), ''));
-          Item := Project.AddChapter(ChapterTitle, RelFile);
+          SourceFile := SourceRoot +
+            StringReplace(Res.Entries[I].Data, '/', PathDelim, [rfReplaceAll]);
+          if not FileExists(SourceFile) then
+            Continue;
+          Inc(ChapterCount);
+          ChapterTitle := TrimLeft(ChangeFileExt(ExtractFileName(SourceFile), ''));
+          TargetRel := RelativeProjectPath(['chapters',
+            Format('%s_%s.docx', [FormatChapterNumber(ChapterCount),
+              MakeSafeFileNamePart(ChapterTitle)])]);
+          TargetAbs := TProjectStore.AbsolutePath(TargetFolder, TargetRel);
+          if not CopyFile(SourceFile, TargetAbs, [cffOverwriteFile]) then
+            Continue;
+          Item := Project.AddChapter(ChapterTitle, TargetRel);
           Item.Status := 'Rohfassung';
         end;
       end;
 
-      // Notiz-Platzhalter anlegen
       SaveTextFileSafe(
-        TProjectStore.AbsolutePath(Res.FolderPath,
+        TProjectStore.AbsolutePath(TargetFolder,
           RelativeProjectPath(['notes', 'project.md'])),
         '# Projektnotizen' + LineEnding + LineEnding);
 
@@ -2863,12 +2889,13 @@ begin
 
       if Assigned(FSettings) then
       begin
-        FSettings.AddRecentProject(Res.FolderPath);
+        FSettings.DefaultProjectFolder := RootFolder;
+        FSettings.AddRecentProject(TargetFolder);
         TSettingsStore.Save(FSettings);
       end;
 
-      UpdateStatus('Projekt importiert: ' + Res.Title +
-        ' (' + IntToStr(Res.SelectedFiles.Count) + ' Kapitel)');
+      UpdateStatus(Format('Projekt importiert: %s (%d Kapitel) → %s',
+        [Res.Title, ChapterCount, TargetFolder]));
     except
       Project.Free;
       raise;
