@@ -28,6 +28,10 @@ type
     FWelcomeImage: TImage;
     FProjectCards: array of TPanel;
     FDeferredProjectFolder: string;
+    FDashboardBox: TPaintBox;
+    FStatusCounts: array[0..High(STRUCTURA_STATUSES)] of Integer;
+    FOpenTaskCount: Integer;
+    FNextStepText: string;
     procedure ConfigureUi;
     procedure RebuildProjectCards;
     procedure ClearProjectCards;
@@ -69,6 +73,9 @@ type
     function BuildChapterFileName(AItem: TStructuraItem; AListIndex: Integer): string;
     function BuildChapterListCaption(AIndex: Integer; AItem: TStructuraItem): string;
     function StatusColor(const AStatus: string): TColor;
+    procedure ComputeDashboardData;
+    procedure DashboardPaint(Sender: TObject);
+    function CountOpenTasksInNotes(const AFileName: string): Integer;
     function EnsureUniqueRelativeFileName(const ARelative: string): string;
     function MakeSafeFileNamePart(const AValue: string): string;
     function CreateBackupCopy(const AAbsoluteFileName: string): Boolean;
@@ -250,6 +257,14 @@ begin
   ExportButton.Caption := 'Export ▼';
   WordButton.Visible := True;
   LibreButton.Visible := True;
+
+  // Status-Dashboard in der Projektübersicht
+  FDashboardBox := TPaintBox.Create(Self);
+  FDashboardBox.Parent := ProjectPanel;
+  FDashboardBox.SetBounds(316, 244, 720, 160);
+  FDashboardBox.OnPaint := @DashboardPaint;
+  FDashboardBox.Visible := False;
+  ProjectStatusLabel.Visible := False;
 
   // Begrüßungsbild für die leere Startansicht (noch keine Projekte vorhanden)
   FWelcomeImage := TImage.Create(Self);
@@ -653,6 +668,8 @@ begin
       ProjectTitleLabel.Caption := 'Willkommen bei Structura';
       ProjectSubtitleLabel.Caption := 'Lege ein neues Projekt an oder öffne einen vorhandenen Ordner.';
     end;
+    if Assigned(FDashboardBox) then
+      FDashboardBox.Visible := False;
     RebuildProjectCards;
     // Eule nur zeigen, solange es noch keine Projektkacheln gibt
     if Assigned(FWelcomeImage) then
@@ -663,6 +680,12 @@ begin
   ClearProjectCards;
   if Assigned(FWelcomeImage) then
     FWelcomeImage.Visible := False;
+  ComputeDashboardData;
+  if Assigned(FDashboardBox) then
+  begin
+    FDashboardBox.Visible := True;
+    FDashboardBox.Invalidate;
+  end;
 
   CoverImage.Visible := True;
   ProjectNotesLabel.Visible := True;
@@ -990,6 +1013,177 @@ begin
     Result := TColor($00323CDC)   // Rot
   else
     Result := clSilver;           // Rohfassung / unbekannt
+end;
+
+function TMainForm.CountOpenTasksInNotes(const AFileName: string): Integer;
+var
+  Lines: TStringList;
+  I: Integer;
+  Line: string;
+begin
+  Result := 0;
+  if not FileExists(AFileName) then
+    Exit;
+  Lines := TStringList.Create;
+  try
+    try
+      Lines.LoadFromFile(AFileName);
+    except
+      Exit;
+    end;
+    for I := 0 to Lines.Count - 1 do
+    begin
+      Line := TrimLeft(Lines[I]);
+      if AnsiStartsStr('- [ ]', Line) or AnsiStartsStr('* [ ]', Line) then
+        Inc(Result);
+    end;
+  finally
+    Lines.Free;
+  end;
+end;
+
+procedure TMainForm.ComputeDashboardData;
+var
+  I, NextIndex, BestRank, Rank: Integer;
+  Item, NextItem: TStructuraItem;
+begin
+  for I := Low(FStatusCounts) to High(FStatusCounts) do
+    FStatusCounts[I] := 0;
+  FOpenTaskCount := 0;
+  FNextStepText := '';
+  if not Assigned(FProject) then
+    Exit;
+
+  NextItem := nil;
+  NextIndex := -1;
+  BestRank := MaxInt;
+  for I := 0 to FProject.Count - 1 do
+  begin
+    Item := FProject[I];
+    if Item.ItemType <> sitChapter then
+      Continue;
+    Inc(FStatusCounts[StatusIndex(Item.Status)]);
+    Inc(FOpenTaskCount, CountOpenTasksInNotes(AbsoluteItemNotesFileName(Item)));
+
+    // Nächster Schritt: Problemkapitel zuerst, sonst das Kapitel mit dem
+    // niedrigsten Bearbeitungsstand. Finale Kapitel brauchen nichts mehr.
+    Rank := StatusIndex(Item.Status);
+    if Rank = STATUS_PROBLEM_INDEX then
+      Rank := -1
+    else if Rank = STATUS_FINAL_INDEX then
+      Rank := MaxInt;
+    if Rank < BestRank then
+    begin
+      BestRank := Rank;
+      NextItem := Item;
+      NextIndex := I;
+    end;
+  end;
+
+  if Assigned(NextItem) then
+  begin
+    if BestRank = -1 then
+      FNextStepText := Format('Nächster Schritt: Kapitel %s „%s" — Problem beheben',
+        [FormatChapterNumber(ChapterSequenceForIndex(NextIndex)), NextItem.Title])
+    else if BestRank <= 1 then
+      FNextStepText := Format('Nächster Schritt: Kapitel %s „%s" weiterschreiben',
+        [FormatChapterNumber(ChapterSequenceForIndex(NextIndex)), NextItem.Title])
+    else
+      FNextStepText := Format('Nächster Schritt: Kapitel %s „%s" prüfen',
+        [FormatChapterNumber(ChapterSequenceForIndex(NextIndex)), NextItem.Title]);
+  end
+  else if FStatusCounts[STATUS_FINAL_INDEX] > 0 then
+    FNextStepText := 'Alle Kapitel final — bereit für den Export.';
+end;
+
+procedure TMainForm.DashboardPaint(Sender: TObject);
+const
+  BarHeight = 14;
+  RowHeight = 20;
+  ColWidth = 240;
+var
+  C: TCanvas;
+  Total, I, X, SegWidth, LegendTop, Col, Row, DotY: Integer;
+  InfoText: string;
+begin
+  if not Assigned(FProject) then
+    Exit;
+  C := FDashboardBox.Canvas;
+  C.Brush.Color := clWindow;
+  C.FillRect(0, 0, FDashboardBox.Width, FDashboardBox.Height);
+
+  Total := 0;
+  for I := Low(FStatusCounts) to High(FStatusCounts) do
+    Inc(Total, FStatusCounts[I]);
+  if Total = 0 then
+  begin
+    C.Font.Color := clGrayText;
+    C.TextOut(0, 0, 'Noch keine Kapitel angelegt.');
+    Exit;
+  end;
+
+  // Segmentierter Fortschrittsbalken: Anteile je Status
+  X := 0;
+  for I := Low(FStatusCounts) to High(FStatusCounts) do
+  begin
+    if FStatusCounts[I] = 0 then
+      Continue;
+    SegWidth := Round(FDashboardBox.Width * FStatusCounts[I] / Total);
+    if SegWidth < 2 then
+      SegWidth := 2;
+    if X + SegWidth > FDashboardBox.Width then
+      SegWidth := FDashboardBox.Width - X;
+    C.Brush.Color := StatusColor(STRUCTURA_STATUSES[I]);
+    C.FillRect(X, 0, X + SegWidth, BarHeight);
+    X := X + SegWidth;
+  end;
+  // Rundungsrest mit letzter Farbe auffüllen
+  if X < FDashboardBox.Width then
+    C.FillRect(X, 0, FDashboardBox.Width, BarHeight);
+
+  // Legende in zwei Spalten: Punkt + Anzahl + Statusname
+  LegendTop := BarHeight + 10;
+  Col := 0;
+  Row := 0;
+  C.Font.Color := clWindowText;
+  C.Pen.Color := clGray;
+  for I := Low(FStatusCounts) to High(FStatusCounts) do
+  begin
+    if FStatusCounts[I] = 0 then
+      Continue;
+    DotY := LegendTop + Row * RowHeight + (RowHeight - 10) div 2;
+    C.Brush.Color := StatusColor(STRUCTURA_STATUSES[I]);
+    C.Ellipse(Col * ColWidth, DotY, Col * ColWidth + 10, DotY + 10);
+    C.Brush.Style := bsClear;
+    C.TextOut(Col * ColWidth + 16, LegendTop + Row * RowHeight,
+      Format('%d %s', [FStatusCounts[I], STRUCTURA_STATUSES[I]]));
+    C.Brush.Style := bsSolid;
+    Inc(Row);
+    if Row >= 4 then
+    begin
+      Row := 0;
+      Inc(Col);
+    end;
+  end;
+
+  // Offene Aufgaben und nächster Schritt
+  C.Brush.Style := bsClear;
+  InfoText := '';
+  if FOpenTaskCount > 0 then
+    InfoText := Format('%d offene Aufgaben in den Notizen', [FOpenTaskCount]);
+  if InfoText <> '' then
+  begin
+    C.Font.Color := clGrayText;
+    C.TextOut(0, LegendTop + 4 * RowHeight + 6, InfoText);
+  end;
+  if FNextStepText <> '' then
+  begin
+    C.Font.Color := clWindowText;
+    C.Font.Style := [fsBold];
+    C.TextOut(0, LegendTop + 4 * RowHeight + 26, FNextStepText);
+    C.Font.Style := [];
+  end;
+  C.Brush.Style := bsSolid;
 end;
 
 procedure TMainForm.ItemListDrawItem(Control: TWinControl; Index: Integer;

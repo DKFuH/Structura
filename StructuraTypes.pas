@@ -57,6 +57,7 @@ type
 function NewItemId(const Prefix: string): string;
 function RelativeProjectPath(const Parts: array of string): string;
 function DefaultChapterStatus: string;
+function StatusIndex(const AStatus: string): Integer;
 
 const
   STRUCTURA_STATUSES: array[0..6] of string = (
@@ -68,6 +69,8 @@ const
     'Final',
     'Problem'
   );
+  STATUS_FINAL_INDEX = 5;
+  STATUS_PROBLEM_INDEX = 6;
 
 implementation
 
@@ -171,6 +174,17 @@ end;
 function DefaultChapterStatus: string;
 begin
   Result := STRUCTURA_STATUSES[0];
+end;
+
+// Index in STRUCTURA_STATUSES; unbekannte Werte zählen als Rohfassung.
+function StatusIndex(const AStatus: string): Integer;
+var
+  I: Integer;
+begin
+  for I := Low(STRUCTURA_STATUSES) to High(STRUCTURA_STATUSES) do
+    if SameText(AStatus, STRUCTURA_STATUSES[I]) then
+      Exit(I);
+  Result := 0;
 end;
 
 end.

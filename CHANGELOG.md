@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [Unreleased — 0.2.0]
+
+### Added
+
+- Author dashboard on the project overview: segmented progress bar colored by chapter status, status legend with counts, open-task count parsed from Markdown checklists (`- [ ]`) in chapter notes, and a suggested next step (problem chapters first, then the least-finished chapter)
+
+---
+
 ## [0.1.1] — 2026-06-11
 
 ### Added

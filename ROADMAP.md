@@ -28,11 +28,15 @@ The goal of the 0.1.x series is a reliable, calm desktop workflow for authors wh
 
 When a project is open, the overview should answer at a glance: what is done, what is open, what is the next sensible step?
 
-- project dashboard: chapter counts by status, total word count, progress bar
-- problem chapters surfaced prominently
+**Done:**
+- project dashboard: chapter counts by status, segmented progress bar
+- suggested next step ("review chapter 07") — problem chapters first
+- open-task count from Markdown checklists (`- [ ]`) in chapter notes
+
+**Planned:**
+- problem chapters listed by name, clickable
 - recently edited chapters
-- suggested next step ("review chapter 07")
-- simple per-chapter task checklists next to notes (sources checked, intro shortened, …)
+- per-chapter open-task display next to notes
 
 ## 0.3.x — Review mode (relief)
 
