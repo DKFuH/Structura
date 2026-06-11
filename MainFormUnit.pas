@@ -25,6 +25,7 @@ type
     FCopyPopupMenu: TPopupMenu;
     FExportPopupMenu: TPopupMenu;
     FBackLabel: TLabel;
+    FWelcomeImage: TImage;
     FProjectCards: array of TPanel;
     FDeferredProjectFolder: string;
     procedure ConfigureUi;
@@ -249,6 +250,21 @@ begin
   ExportButton.Caption := 'Export ▼';
   WordButton.Visible := True;
   LibreButton.Visible := True;
+
+  // Begrüßungsbild für die leere Startansicht (noch keine Projekte vorhanden)
+  FWelcomeImage := TImage.Create(Self);
+  FWelcomeImage.Parent := ProjectPanel;
+  FWelcomeImage.SetBounds(24, 120, 480, 320);
+  FWelcomeImage.Proportional := True;
+  FWelcomeImage.Stretch := True;
+  FWelcomeImage.Center := False;
+  FWelcomeImage.Visible := False;
+  if FileExists(ExpandFileName('assets\owl.png')) then
+    try
+      FWelcomeImage.Picture.LoadFromFile(ExpandFileName('assets\owl.png'));
+    except
+      // Bild fehlt oder defekt — Startansicht bleibt einfach ohne Bild
+    end;
 
   FBackLabel := TLabel.Create(Self);
   FBackLabel.Parent := ChapterPanel;
@@ -638,9 +654,15 @@ begin
       ProjectSubtitleLabel.Caption := 'Lege ein neues Projekt an oder öffne einen vorhandenen Ordner.';
     end;
     RebuildProjectCards;
+    // Eule nur zeigen, solange es noch keine Projektkacheln gibt
+    if Assigned(FWelcomeImage) then
+      FWelcomeImage.Visible := (Length(FProjectCards) = 0) and
+        Assigned(FWelcomeImage.Picture.Graphic);
     Exit;
   end;
   ClearProjectCards;
+  if Assigned(FWelcomeImage) then
+    FWelcomeImage.Visible := False;
 
   CoverImage.Visible := True;
   ProjectNotesLabel.Visible := True;

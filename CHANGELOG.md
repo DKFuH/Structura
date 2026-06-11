@@ -20,6 +20,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 - Colored status dots in the chapter sidebar (gray draft → green final, red problem) — replaces the bracketed status text
 - Dividers are now visually distinct in the sidebar (bold on gray background instead of `--- title ---`)
 - Long chapter titles are truncated with an ellipsis instead of overflowing
+- Welcome illustration (writing owl) on the start view as long as no projects exist yet
 
 ### Changed
 
