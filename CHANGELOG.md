@@ -7,7 +7,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
-## [Unreleased — 0.2.0]
+## [0.2.0] — 2026-06-11
 
 ### Added
 
@@ -15,8 +15,19 @@ Versioning: [Semantic Versioning](https://semver.org/)
 - Problem chapters and recently edited chapters listed by name on the dashboard — click to jump straight to the chapter
 - Chapter view shows the number of open checklist tasks from its notes
 - Keyboard navigation: Alt+Left/Right switches chapters, Alt+O jumps to the next non-final chapter, Alt+P to the next problem chapter (wraps around)
+- Configurable chapter number format in settings: 1, 2, or 3 digits (`1_`, `01_`, `001_`) — applies to filenames, sidebar, and chapter heading; changing it asks explicitly before renaming existing files
+- Proactive file lock check before renaming chapter files: if a chapter DOCX is open in another program, the rename is refused with a clear message before any file is touched (single rename and bulk renumbering)
+- Daily zipped project backup: on first open of a project each day, the entire project (excluding the backup folder) is archived to `backup/daily/YYYY-MM-DD.zip`; backups older than a configurable retention (default 14 days) are deleted automatically
+- Colored status dots in the chapter sidebar (gray draft → green final, red problem) — replaces the bracketed status text
+- Dividers are now visually distinct in the sidebar; long chapter titles are truncated with an ellipsis
+- Welcome illustration (writing owl) on the start view as long as no projects exist yet
 - Colored button icons from Streamline Ultimate Color (CC BY 4.0) replace the old two-color BMP glyphs
-- About dialog ("Über" link in the sidebar header): version, MIT license, repository link, and icon attribution
+- About dialog (info icon in the sidebar header): version, MIT license, repository link, and icon attribution
+
+### Changed
+
+- Chapter view header row enlarged; back link more prominent
+- Removed unused office diagnostic label from the project overview (leftover from the pre-0.1.0 startup diagnostics)
 
 ---
 
@@ -26,14 +37,6 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 - ROADMAP.md with planned milestones and explicit non-goals
 - German README (README.de.md)
-- Configurable chapter number format in settings: 1, 2, or 3 digits (`1_`, `01_`, `001_`) — applies to filenames, sidebar, and chapter heading
-- Proactive file lock check before renaming chapter files: if a chapter DOCX is open in another program, the rename is refused with a clear message before any file is touched (single rename and bulk renumbering)
-- Daily zipped project backup: on first open of a project each day, the entire project (excluding the backup folder) is archived to `backup/daily/YYYY-MM-DD.zip`; backups older than a configurable retention (default 14 days, settable in settings) are deleted automatically
-- Changing the chapter number format asks explicitly whether existing chapter files should be renamed — nothing is renamed silently
-- Colored status dots in the chapter sidebar (gray draft → green final, red problem) — replaces the bracketed status text
-- Dividers are now visually distinct in the sidebar (bold on gray background instead of `--- title ---`)
-- Long chapter titles are truncated with an ellipsis instead of overflowing
-- Welcome illustration (writing owl) on the start view as long as no projects exist yet
 
 ### Changed
 
@@ -41,7 +44,6 @@ Versioning: [Semantic Versioning](https://semver.org/)
 - New project dialog redesigned: root folder (Hauptordner) and project subfolder (Unterordner) are now separate fields — the subfolder name is generated automatically from the project title
 - Warning shown when creating a project in a folder that already contains a `structura.json`
 - After creating a project, the root folder is remembered (not the new project's subfolder)
-- Removed unused office diagnostic label from the project overview (leftover from the pre-0.1.0 startup diagnostics)
 
 ---
 
