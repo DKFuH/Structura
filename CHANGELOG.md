@@ -13,6 +13,10 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 - Projects without a cover now show an illustrated "Kein Cover" placeholder (project overview and start view tiles) instead of a plain gray box
 
+### Fixed
+
+- Button icons, the welcome owl, the About icon, and the cover placeholder were missing when the app was launched from a working directory other than its own folder (e.g. via a shortcut, or from the release zip on another machine) — all asset paths now resolve relative to the executable location instead of the current working directory
+
 ---
 
 ## [0.4.0] — 2026-06-11

@@ -302,9 +302,9 @@ begin
     Hint := 'Über Structura';
     ShowHint := True;
     OnClick := @AboutLinkClick;
-    if FileExists(ExpandFileName('assets\buttons\about.png')) then
+    if FileExists(AssetPath('assets\buttons\about.png')) then
       try
-        Picture.LoadFromFile(ExpandFileName('assets\buttons\about.png'));
+        Picture.LoadFromFile(AssetPath('assets\buttons\about.png'));
       except
         // Ohne Icon bleibt der Über-Dialog über das Bild unerreichbar —
         // dann eben gar nicht anzeigen, der README-Hinweis bleibt bestehen
@@ -331,9 +331,9 @@ begin
   FWelcomeImage.Stretch := True;
   FWelcomeImage.Center := False;
   FWelcomeImage.Visible := False;
-  if FileExists(ExpandFileName('assets\owl.png')) then
+  if FileExists(AssetPath('assets\owl.png')) then
     try
-      FWelcomeImage.Picture.LoadFromFile(ExpandFileName('assets\owl.png'));
+      FWelcomeImage.Picture.LoadFromFile(AssetPath('assets\owl.png'));
     except
       // Bild fehlt oder defekt — Startansicht bleibt einfach ohne Bild
     end;
@@ -609,7 +609,7 @@ var
   Picture: TPicture;
   FullPath: string;
 begin
-  FullPath := ExpandFileName(AFileName);
+  FullPath := AssetPath(AFileName);
   if not FileExists(FullPath) then
     Exit;
   Picture := TPicture.Create;
@@ -2327,9 +2327,9 @@ begin
     if (not Assigned(CoverImg.Picture.Graphic)) or CoverImg.Picture.Graphic.Empty then
     begin
       // Bild-Platzhalter; wenn er fehlt, graues Panel hinter dem TImage
-      if FileExists(ExpandFileName('assets\cover_placeholder.png')) then
+      if FileExists(AssetPath('assets\cover_placeholder.png')) then
         try
-          CoverImg.Picture.LoadFromFile(ExpandFileName('assets\cover_placeholder.png'));
+          CoverImg.Picture.LoadFromFile(AssetPath('assets\cover_placeholder.png'));
         except
         end;
       if (not Assigned(CoverImg.Picture.Graphic)) or CoverImg.Picture.Graphic.Empty then
@@ -2412,7 +2412,7 @@ var
   PlaceholderPath: string;
 begin
   // Hübscher Bild-Platzhalter, wenn vorhanden
-  PlaceholderPath := ExpandFileName('assets\cover_placeholder.png');
+  PlaceholderPath := AssetPath('assets\cover_placeholder.png');
   if FileExists(PlaceholderPath) then
     try
       CoverImage.Picture.LoadFromFile(PlaceholderPath);

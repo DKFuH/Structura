@@ -58,6 +58,7 @@ function NewItemId(const Prefix: string): string;
 function RelativeProjectPath(const Parts: array of string): string;
 function DefaultChapterStatus: string;
 function StatusIndex(const AStatus: string): Integer;
+function AssetPath(const ARelative: string): string;
 
 const
   STRUCTURA_STATUSES: array[0..6] of string = (
@@ -174,6 +175,20 @@ end;
 function DefaultChapterStatus: string;
 begin
   Result := STRUCTURA_STATUSES[0];
+end;
+
+// Löst einen Asset-Pfad relativ zum Programmverzeichnis auf — nicht relativ
+// zum Arbeitsverzeichnis, das beim Start per Verknüpfung o.ä. abweichen kann.
+function AssetPath(const ARelative: string): string;
+begin
+  Result := ExtractFilePath(ParamStr(0)) + ARelative;
+end;
+
+// Pfad relativ zum EXE-Verzeichnis — nicht zum Arbeitsverzeichnis, das je
+// nach Startart (Verknüpfung, Konsole, Dateizuordnung) woanders liegen kann.
+function AppAssetPath(const ARelative: string): string;
+begin
+  Result := ExtractFilePath(ParamStr(0)) + ARelative;
 end;
 
 // Index in STRUCTURA_STATUSES; unbekannte Werte zählen als Rohfassung.

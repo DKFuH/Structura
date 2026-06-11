@@ -13,7 +13,8 @@ procedure ShowAboutDialog;
 implementation
 
 uses
-  Classes, SysUtils, Forms, Controls, StdCtrls, ExtCtrls, Graphics, LCLIntf;
+  Classes, SysUtils, Forms, Controls, StdCtrls, ExtCtrls, Graphics, LCLIntf,
+  StructuraTypes;
 
 type
   TLinkLabelHelper = class
@@ -94,7 +95,7 @@ begin
     Scroll.ParentColor := False;
 
     TextLeft := 24;
-    OwlPath := ExpandFileName('assets\owl.png');
+    OwlPath := AssetPath('assets\owl.png');
     if FileExists(OwlPath) then
     begin
       OwlImage := TImage.Create(Dialog);
