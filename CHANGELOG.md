@@ -16,6 +16,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ### Fixed
 
+- Export dialog buttons (Exportieren / Abbrechen) were missing — they were placed on a bottom panel whose width wasn't settled when positioned, pushing them off-screen with their right anchor. They are now anchored directly to the dialog's bottom-right
 - Import no longer freezes when opened: the recursive scan is bounded (max depth, skips symlinks/junctions and existing Structura projects with a `structura.json`), and the dialog no longer auto-scans the project root folder on open — scanning happens only after you pick a manuscript folder
 
 ---

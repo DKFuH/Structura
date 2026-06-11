@@ -24,7 +24,6 @@ var
   Dialog: TForm;
   ChapterList: TCheckListBox;
   TitlePageCheck, NumberCheck, DividerCheck, ReviewCheck: TCheckBox;
-  ButtonPanel: TPanel;
   OkButton, CancelButton: TButton;
   ListLabel, OptionsLabel: TLabel;
   I, Sequence: Integer;
@@ -40,7 +39,7 @@ begin
     Dialog.BorderStyle := bsDialog;
     Dialog.Position := poScreenCenter;
     Dialog.ClientWidth := 560;
-    Dialog.ClientHeight := 480;
+    Dialog.ClientHeight := 492;
 
     ListLabel := TLabel.Create(Dialog);
     ListLabel.Parent := Dialog;
@@ -102,27 +101,23 @@ begin
     ReviewCheck.Caption := 'Prüfexport: zusätzlich eine Textdatei pro Kapitel (export\review\)';
     ReviewCheck.Checked := False;
 
-    ButtonPanel := TPanel.Create(Dialog);
-    ButtonPanel.Parent := Dialog;
-    ButtonPanel.Align := alBottom;
-    ButtonPanel.Height := 44;
-    ButtonPanel.BevelOuter := bvNone;
-
+    // Buttons direkt aufs Dialog, an Unterkante/rechts verankert — kein
+    // Zwischen-Panel, dessen Breite zum Setzzeitpunkt noch nicht steht.
     OkButton := TButton.Create(Dialog);
-    OkButton.Parent := ButtonPanel;
+    OkButton.Parent := Dialog;
     OkButton.Caption := 'Exportieren';
     OkButton.ModalResult := mrOk;
     OkButton.Default := True;
-    OkButton.Anchors := [akTop, akRight];
-    OkButton.SetBounds(Dialog.ClientWidth - 230, 8, 110, 27);
+    OkButton.Anchors := [akBottom, akRight];
+    OkButton.SetBounds(Dialog.ClientWidth - 230, Dialog.ClientHeight - 38, 110, 27);
 
     CancelButton := TButton.Create(Dialog);
-    CancelButton.Parent := ButtonPanel;
+    CancelButton.Parent := Dialog;
     CancelButton.Caption := 'Abbrechen';
     CancelButton.ModalResult := mrCancel;
     CancelButton.Cancel := True;
-    CancelButton.Anchors := [akTop, akRight];
-    CancelButton.SetBounds(Dialog.ClientWidth - 110, 8, 94, 27);
+    CancelButton.Anchors := [akBottom, akRight];
+    CancelButton.SetBounds(Dialog.ClientWidth - 110, Dialog.ClientHeight - 38, 94, 27);
 
     if Dialog.ShowModal <> mrOk then
       Exit(False);
