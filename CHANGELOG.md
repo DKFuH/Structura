@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [Unreleased — 0.3.0]
+
+### Added
+
+- Review table ("Review-Ansicht öffnen" on the project overview): all chapters with number, title, status, word count, notes indicator, and open-task count; dividers shown as section rows; double-click or "Zum Kapitel" jumps straight to the chapter
+
+---
+
 ## [0.2.0] — 2026-06-11
 
 ### Added

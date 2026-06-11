@@ -41,7 +41,10 @@ When a project is open, the overview should answer at a glance: what is done, wh
 
 A view built for the revision phase, not the drafting phase.
 
-- chapter review table: chapter | status | words | notes | open tasks
+**Done:**
+- chapter review table (number | chapter | status | words | notes | open tasks), double-click jumps to the chapter
+
+**Planned:**
 - better notes view, Markdown notes with preview panel
 - more robust DOCX text preview
 

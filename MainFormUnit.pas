@@ -82,6 +82,7 @@ type
     procedure DashboardLinkClick(Sender: TObject);
     procedure FormKeyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure AboutLinkClick(Sender: TObject);
+    procedure ReviewLinkClick(Sender: TObject);
     procedure NavigateChapter(ADelta: Integer);
     procedure NavigateToNextWithStatus(AProblemOnly: Boolean);
     function EnsureUniqueRelativeFileName(const ARelative: string): string;
@@ -198,7 +199,7 @@ uses
   LCLIntf, LCLType, FileUtil, Process, Clipbrd, StrUtils, Math, DateUtils, Zipper,
   ProjectStore, ProjectDialogUnit, ElementDialogUnit, DocumentWorkflow,
   DocxPreview, SettingsStore, SettingsDialogUnit, FirstRunWizardUnit,
-  ImportProjectDialogUnit, AboutDialogUnit;
+  ImportProjectDialogUnit, AboutDialogUnit, ReviewDialogUnit;
 
 function NormalizeStoredPathForCompare(const APath: string): string;
 begin
@@ -1151,6 +1152,47 @@ begin
   ShowAboutDialog;
 end;
 
+procedure TMainForm.ReviewLinkClick(Sender: TObject);
+var
+  Rows: TReviewRows;
+  I, RowIndex, JumpTo: Integer;
+  Item: TStructuraItem;
+begin
+  if not Assigned(FProject) then
+    Exit;
+  SetLength(Rows, FProject.Count);
+  RowIndex := 0;
+  for I := 0 to FProject.Count - 1 do
+  begin
+    Item := FProject[I];
+    Rows[RowIndex].ItemIndex := I;
+    Rows[RowIndex].Title := Item.Title;
+    if Item.ItemType = sitDivider then
+    begin
+      Rows[RowIndex].Number := '';
+      Rows[RowIndex].Status := '';
+      Rows[RowIndex].WordCount := -1;
+      Rows[RowIndex].HasNotes := False;
+      Rows[RowIndex].OpenTasks := 0;
+    end
+    else
+    begin
+      Rows[RowIndex].Number := FormatChapterNumber(ChapterSequenceForIndex(I));
+      Rows[RowIndex].Status := Item.Status;
+      Rows[RowIndex].WordCount := ChapterWordCount(Item);
+      Rows[RowIndex].HasNotes :=
+        Trim(LoadTextFileSafe(AbsoluteItemNotesFileName(Item))) <> '';
+      Rows[RowIndex].OpenTasks :=
+        CountOpenTasksInNotes(AbsoluteItemNotesFileName(Item));
+    end;
+    Inc(RowIndex);
+  end;
+
+  JumpTo := ShowReviewDialog(Rows);
+  if JumpTo >= 0 then
+    SelectItem(JumpTo);
+end;
+
 procedure TMainForm.NavigateChapter(ADelta: Integer);
 var
   I: Integer;
@@ -1351,6 +1393,15 @@ begin
         Format('%s  %s', [FormatChapterNumber(ChapterSequenceForIndex(RecentIndices[I])), Item.Title]),
         RecentIndices[I]);
     end;
+  end;
+
+  // Einstieg in die Review-Tabelle, links unter dem Cover
+  with AddLinkLabel(24, LinksTop, 'Review-Ansicht öffnen →', -1) do
+  begin
+    Cursor := crHandPoint;
+    Font.Color := TColor($00B05A1E);
+    Font.Style := [];
+    OnClick := @ReviewLinkClick;
   end;
 end;
 
