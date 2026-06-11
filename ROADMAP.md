@@ -4,6 +4,8 @@ Structura follows a slow, deliberate release pace. Each milestone stabilizes bef
 
 The guiding idea behind every release: authors need **orientation** (where do I stand?), **relief** (fewer clicks, less friction), and **visible progress** (small wins, not just a word count). Structura makes large book projects manageable by making chapters, status, notes, and progress visible — without taking the files out of the author's hands.
 
+Every feature is measured against three goals — **Orientierung, Entlastung, Fortschritt**. If a feature serves none of them, it does not belong in the main view. See [docs/grundsaetze.md](docs/grundsaetze.md) for the full product and design principles.
+
 ## 0.1.x — Stabilization
 
 The goal of the 0.1.x series is a reliable, calm desktop workflow for authors who already work with DOCX files.
