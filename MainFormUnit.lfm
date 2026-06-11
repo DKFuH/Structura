@@ -263,7 +263,7 @@ object MainForm: TMainForm
       object ProjectNotesLabel: TLabel
         Left = 24
         Height = 15
-        Top = 410
+        Top = 530
         Width = 111
         Caption = 'Projektnotizen (.md)'
         Font.Style = [fsBold]
@@ -272,8 +272,8 @@ object MainForm: TMainForm
       end
       object ProjectNotesMemo: TMemo
         Left = 24
-        Height = 280
-        Top = 438
+        Height = 260
+        Top = 558
         Width = 1012
         ScrollBars = ssAutoBoth
         TabOrder = 0

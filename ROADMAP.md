@@ -32,11 +32,12 @@ When a project is open, the overview should answer at a glance: what is done, wh
 - project dashboard: chapter counts by status, segmented progress bar
 - suggested next step ("review chapter 07") — problem chapters first
 - open-task count from Markdown checklists (`- [ ]`) in chapter notes
+- problem chapters listed by name, clickable
+- recently edited chapters, clickable
+- per-chapter open-task count in the chapter view
 
 **Planned:**
-- problem chapters listed by name, clickable
-- recently edited chapters
-- per-chapter open-task display next to notes
+- fast navigation: next open chapter, next problem chapter (moves up from 0.3 if needed)
 
 ## 0.3.x — Review mode (relief)
 

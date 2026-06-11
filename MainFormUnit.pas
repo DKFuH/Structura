@@ -32,6 +32,7 @@ type
     FStatusCounts: array[0..High(STRUCTURA_STATUSES)] of Integer;
     FOpenTaskCount: Integer;
     FNextStepText: string;
+    FDashboardLinks: array of TLabel;
     procedure ConfigureUi;
     procedure RebuildProjectCards;
     procedure ClearProjectCards;
@@ -76,6 +77,9 @@ type
     procedure ComputeDashboardData;
     procedure DashboardPaint(Sender: TObject);
     function CountOpenTasksInNotes(const AFileName: string): Integer;
+    procedure ClearDashboardLinks;
+    procedure RebuildDashboardLinks;
+    procedure DashboardLinkClick(Sender: TObject);
     function EnsureUniqueRelativeFileName(const ARelative: string): string;
     function MakeSafeFileNamePart(const AValue: string): string;
     function CreateBackupCopy(const AAbsoluteFileName: string): Boolean;
@@ -670,6 +674,7 @@ begin
     end;
     if Assigned(FDashboardBox) then
       FDashboardBox.Visible := False;
+    ClearDashboardLinks;
     RebuildProjectCards;
     // Eule nur zeigen, solange es noch keine Projektkacheln gibt
     if Assigned(FWelcomeImage) then
@@ -686,6 +691,7 @@ begin
     FDashboardBox.Visible := True;
     FDashboardBox.Invalidate;
   end;
+  RebuildDashboardLinks;
 
   CoverImage.Visible := True;
   ProjectNotesLabel.Visible := True;
@@ -734,7 +740,8 @@ var
   FileName: string;
   Meta: TStringList;
   Sequence: Integer;
-  StatusIndex: Integer;
+  ComboIndex: Integer;
+  OpenTasks: Integer;
 begin
   Item := CurrentItem;
   if not Assigned(Item) then
@@ -750,6 +757,9 @@ begin
       Meta.Add('Datei: ' + Item.FileName);
       Meta.Add('Geändert: ' + FileModifiedText(FileName));
       Meta.Add('Wortzahl: ' + IntToStr(ChapterWordCount(Item)));
+      OpenTasks := CountOpenTasksInNotes(AbsoluteItemNotesFileName(Item));
+      if OpenTasks > 0 then
+        Meta.Add(Format('Offene Aufgaben: %d', [OpenTasks]));
       ChapterMetaLabel.Caption := Meta.Text;
 
       FCurrentPreviewText := TDocxPreview.LoadPreviewText(FileName);
@@ -757,14 +767,14 @@ begin
       try
         PreviewMemo.Text := FCurrentPreviewText;
         NotesMemo.Text := LoadTextFileSafe(AbsoluteItemNotesFileName(Item));
-        StatusIndex := ChapterStatusCombo.Items.IndexOf(Item.Status);
-        if StatusIndex < 0 then
+        ComboIndex := ChapterStatusCombo.Items.IndexOf(Item.Status);
+        if ComboIndex < 0 then
         begin
           if Trim(Item.Status) <> '' then
             ChapterStatusCombo.Items.Add(Item.Status);
-          StatusIndex := ChapterStatusCombo.Items.IndexOf(Item.Status);
+          ComboIndex := ChapterStatusCombo.Items.IndexOf(Item.Status);
         end;
-        ChapterStatusCombo.ItemIndex := StatusIndex;
+        ChapterStatusCombo.ItemIndex := ComboIndex;
       finally
         FUpdatingUi := False;
       end;
@@ -1094,6 +1104,130 @@ begin
   end
   else if FStatusCounts[STATUS_FINAL_INDEX] > 0 then
     FNextStepText := 'Alle Kapitel final — bereit für den Export.';
+end;
+
+procedure TMainForm.ClearDashboardLinks;
+var
+  I: Integer;
+begin
+  for I := 0 to High(FDashboardLinks) do
+    FDashboardLinks[I].Free;
+  SetLength(FDashboardLinks, 0);
+end;
+
+procedure TMainForm.DashboardLinkClick(Sender: TObject);
+begin
+  if Sender is TLabel then
+    SelectItem(TLabel(Sender).Tag);
+end;
+
+procedure TMainForm.RebuildDashboardLinks;
+const
+  MaxEntries = 4;
+  LinksTop = 414;
+  RowHeight = 20;
+  ProblemLeft = 316;
+  RecentLeft = 676;
+
+  function AddLinkLabel(ALeft, ATop: Integer; const ACaption: string;
+    AItemIndex: Integer): TLabel;
+  begin
+    Result := TLabel.Create(Self);
+    Result.Parent := ProjectPanel;
+    Result.Left := ALeft;
+    Result.Top := ATop;
+    Result.Caption := ACaption;
+    if AItemIndex >= 0 then
+    begin
+      Result.Tag := AItemIndex;
+      Result.Cursor := crHandPoint;
+      Result.Font.Color := TColor($00B05A1E); // Blau, wie ein Link
+      Result.OnClick := @DashboardLinkClick;
+    end
+    else
+    begin
+      Result.Font.Color := clGrayText;
+      Result.Font.Style := [fsBold];
+    end;
+    SetLength(FDashboardLinks, Length(FDashboardLinks) + 1);
+    FDashboardLinks[High(FDashboardLinks)] := Result;
+  end;
+
+var
+  I, Row: Integer;
+  Item: TStructuraItem;
+  RecentIndices: array of Integer;
+  RecentAges: array of TDateTime;
+  FileName: string;
+  Age: TDateTime;
+  J, InsertAt: Integer;
+begin
+  ClearDashboardLinks;
+  if not Assigned(FProject) then
+    Exit;
+
+  // Problemkapitel, klickbar
+  Row := 0;
+  for I := 0 to FProject.Count - 1 do
+  begin
+    Item := FProject[I];
+    if (Item.ItemType <> sitChapter) or
+       (StatusIndex(Item.Status) <> STATUS_PROBLEM_INDEX) then
+      Continue;
+    if Row = 0 then
+      AddLinkLabel(ProblemLeft, LinksTop, 'Problemkapitel', -1);
+    if Row < MaxEntries then
+      AddLinkLabel(ProblemLeft, LinksTop + (Row + 1) * RowHeight,
+        Format('%s  %s', [FormatChapterNumber(ChapterSequenceForIndex(I)), Item.Title]), I)
+    else if Row = MaxEntries then
+      AddLinkLabel(ProblemLeft, LinksTop + (MaxEntries + 1) * RowHeight, '…', -1);
+    Inc(Row);
+  end;
+
+  // Zuletzt bearbeitete Kapitel (nach Dateiänderungsdatum, neueste zuerst)
+  SetLength(RecentIndices, 0);
+  SetLength(RecentAges, 0);
+  for I := 0 to FProject.Count - 1 do
+  begin
+    Item := FProject[I];
+    if Item.ItemType <> sitChapter then
+      Continue;
+    FileName := AbsoluteItemFileName(Item);
+    if not FileExists(FileName) then
+      Continue;
+    if not FileAge(FileName, Age) then
+      Continue;
+    InsertAt := Length(RecentIndices);
+    for J := 0 to High(RecentIndices) do
+      if Age > RecentAges[J] then
+      begin
+        InsertAt := J;
+        Break;
+      end;
+    if InsertAt >= MaxEntries then
+      Continue;
+    SetLength(RecentIndices, Min(Length(RecentIndices) + 1, MaxEntries));
+    SetLength(RecentAges, Length(RecentIndices));
+    for J := High(RecentIndices) downto InsertAt + 1 do
+    begin
+      RecentIndices[J] := RecentIndices[J - 1];
+      RecentAges[J] := RecentAges[J - 1];
+    end;
+    RecentIndices[InsertAt] := I;
+    RecentAges[InsertAt] := Age;
+  end;
+
+  if Length(RecentIndices) > 0 then
+  begin
+    AddLinkLabel(RecentLeft, LinksTop, 'Zuletzt bearbeitet', -1);
+    for I := 0 to High(RecentIndices) do
+    begin
+      Item := FProject[RecentIndices[I]];
+      AddLinkLabel(RecentLeft, LinksTop + (I + 1) * RowHeight,
+        Format('%s  %s', [FormatChapterNumber(ChapterSequenceForIndex(RecentIndices[I])), Item.Title]),
+        RecentIndices[I]);
+    end;
+  end;
 end;
 
 procedure TMainForm.DashboardPaint(Sender: TObject);

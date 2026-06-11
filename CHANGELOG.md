@@ -12,6 +12,8 @@ Versioning: [Semantic Versioning](https://semver.org/)
 ### Added
 
 - Author dashboard on the project overview: segmented progress bar colored by chapter status, status legend with counts, open-task count parsed from Markdown checklists (`- [ ]`) in chapter notes, and a suggested next step (problem chapters first, then the least-finished chapter)
+- Problem chapters and recently edited chapters listed by name on the dashboard — click to jump straight to the chapter
+- Chapter view shows the number of open checklist tasks from its notes
 
 ---
 
