@@ -30,14 +30,15 @@ end;
 procedure ShowAboutDialog;
 var
   Dialog: TForm;
-  Y: Integer;
+  Scroll: TScrollBox;
+  TextLeft, Y: Integer;
 
   function AddText(const ACaption: string; ABold: Boolean = False;
     AGray: Boolean = False): TLabel;
   begin
     Result := TLabel.Create(Dialog);
-    Result.Parent := Dialog;
-    Result.Left := 24;
+    Result.Parent := Scroll;
+    Result.Left := TextLeft;
     Result.Top := Y;
     Result.Caption := ACaption;
     if ABold then
@@ -60,26 +61,50 @@ var
   OwlImage: TImage;
   OwlPath: string;
   CloseButton: TButton;
-  I: Integer;
+  ButtonPanel: TPanel;
 begin
   Dialog := TForm.Create(nil);
   try
     Dialog.Caption := 'Über Structura';
     Dialog.BorderStyle := bsDialog;
     Dialog.Position := poScreenCenter;
-    Dialog.ClientWidth := 520;
+    Dialog.ClientWidth := 580;
+    Dialog.ClientHeight := 400;
 
-    // Eule links, Text rechts daneben
+    ButtonPanel := TPanel.Create(Dialog);
+    ButtonPanel.Parent := Dialog;
+    ButtonPanel.Align := alBottom;
+    ButtonPanel.Height := 44;
+    ButtonPanel.BevelOuter := bvNone;
+
+    CloseButton := TButton.Create(Dialog);
+    CloseButton.Parent := ButtonPanel;
+    CloseButton.Caption := 'Schließen';
+    CloseButton.ModalResult := mrOk;
+    CloseButton.Anchors := [akTop, akRight];
+    CloseButton.SetBounds(ButtonPanel.ClientWidth - 110, 8, 86, 27);
+
+    // Klassische ScrollBox: wächst der Inhalt, erscheint ein Scrollbalken
+    Scroll := TScrollBox.Create(Dialog);
+    Scroll.Parent := Dialog;
+    Scroll.Align := alClient;
+    Scroll.BorderStyle := bsNone;
+    Scroll.Color := clWindow;
+    Scroll.ParentBackground := False;
+    Scroll.ParentColor := False;
+
+    TextLeft := 24;
     OwlPath := ExpandFileName('assets\owl.png');
     if FileExists(OwlPath) then
     begin
       OwlImage := TImage.Create(Dialog);
-      OwlImage.Parent := Dialog;
+      OwlImage.Parent := Scroll;
       OwlImage.SetBounds(24, 24, 150, 100);
       OwlImage.Proportional := True;
       OwlImage.Stretch := True;
       try
         OwlImage.Picture.LoadFromFile(OwlPath);
+        TextLeft := 200;
       except
         OwlImage.Free;
       end;
@@ -103,20 +128,7 @@ begin
     AddLink('streamlinehq.com', 'https://www.streamlinehq.com/');
     AddLink('Lizenztext: creativecommons.org/licenses/by/4.0',
       'https://creativecommons.org/licenses/by/4.0/');
-    Inc(Y, 20);
 
-    // Textspalte beginnt rechts neben der Eule
-    if FileExists(OwlPath) then
-      for I := 0 to Dialog.ControlCount - 1 do
-        if Dialog.Controls[I] is TLabel then
-          Dialog.Controls[I].Left := 200;
-
-    CloseButton := TButton.Create(Dialog);
-    CloseButton.Parent := Dialog;
-    CloseButton.Caption := 'Schließen';
-    CloseButton.ModalResult := mrOk;
-    CloseButton.SetBounds(Dialog.ClientWidth - 110, Y, 86, 27);
-    Dialog.ClientHeight := Y + 42;
     Dialog.ShowModal;
   finally
     Dialog.Free;

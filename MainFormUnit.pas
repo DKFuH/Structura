@@ -267,16 +267,24 @@ begin
   LibreButton.Visible := True;
 
   // Über-Dialog (Version, Lizenzen, Icon-Attribution)
-  with TLabel.Create(Self) do
+  with TImage.Create(Self) do
   begin
     Parent := HeaderPanel;
-    Caption := 'Über';
     Anchors := [akTop, akRight];
-    Left := HeaderPanel.ClientWidth - 50;
-    Top := 12;
+    SetBounds(HeaderPanel.ClientWidth - 40, 12, 24, 24);
+    Proportional := True;
+    Stretch := True;
     Cursor := crHandPoint;
-    Font.Color := clGrayText;
+    Hint := 'Über Structura';
+    ShowHint := True;
     OnClick := @AboutLinkClick;
+    if FileExists(ExpandFileName('assets\buttons\about.png')) then
+      try
+        Picture.LoadFromFile(ExpandFileName('assets\buttons\about.png'));
+      except
+        // Ohne Icon bleibt der Über-Dialog über das Bild unerreichbar —
+        // dann eben gar nicht anzeigen, der README-Hinweis bleibt bestehen
+      end;
   end;
 
   // Tastaturnavigation: Alt+←/→ Kapitel, Alt+O nächstes offenes, Alt+P nächstes Problem
