@@ -2326,21 +2326,27 @@ begin
     end;
     if (not Assigned(CoverImg.Picture.Graphic)) or CoverImg.Picture.Graphic.Empty then
     begin
-      // TImage zeigt keine Hintergrundfarbe — kleines Panel als Platzhalter dahinter
-      with TPanel.Create(Card) do
-      begin
-        Parent := Card;
-        Left := CoverImg.Left;
-        Top := CoverImg.Top;
-        Width := CoverImg.Width;
-        Height := CoverImg.Height;
-        Color := $00D4D0CC;
-        BevelOuter := bvNone;
-        Caption := '';
-        Cursor := crHandPoint;
-        Hint := FolderPaths[I];
-        OnClick := @ProjectCardClick;
-      end;
+      // Bild-Platzhalter; wenn er fehlt, graues Panel hinter dem TImage
+      if FileExists(ExpandFileName('assets\cover_placeholder.png')) then
+        try
+          CoverImg.Picture.LoadFromFile(ExpandFileName('assets\cover_placeholder.png'));
+        except
+        end;
+      if (not Assigned(CoverImg.Picture.Graphic)) or CoverImg.Picture.Graphic.Empty then
+        with TPanel.Create(Card) do
+        begin
+          Parent := Card;
+          Left := CoverImg.Left;
+          Top := CoverImg.Top;
+          Width := CoverImg.Width;
+          Height := CoverImg.Height;
+          Color := $00D4D0CC;
+          BevelOuter := bvNone;
+          Caption := '';
+          Cursor := crHandPoint;
+          Hint := FolderPaths[I];
+          OnClick := @ProjectCardClick;
+        end;
     end;
 
     // Titel
@@ -2403,7 +2409,18 @@ procedure TMainForm.DrawCoverPlaceholder;
 var
   Bmp: TBitmap;
   W, H: Integer;
+  PlaceholderPath: string;
 begin
+  // Hübscher Bild-Platzhalter, wenn vorhanden
+  PlaceholderPath := ExpandFileName('assets\cover_placeholder.png');
+  if FileExists(PlaceholderPath) then
+    try
+      CoverImage.Picture.LoadFromFile(PlaceholderPath);
+      Exit;
+    except
+      // fällt unten auf den gezeichneten Platzhalter zurück
+    end;
+
   W := CoverImage.Width;
   H := CoverImage.Height;
   if (W <= 0) or (H <= 0) then

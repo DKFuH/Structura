@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [Unreleased]
+
+### Changed
+
+- Projects without a cover now show an illustrated "Kein Cover" placeholder (project overview and start view tiles) instead of a plain gray box
+
+---
+
 ## [0.4.0] — 2026-06-11
 
 ### Added
