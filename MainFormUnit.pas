@@ -27,6 +27,7 @@ type
     FExportPopupMenu: TPopupMenu;
     FBackLabel: TLabel;
     FProjectBackLabel: TLabel;
+    FProjectExportLabel: TLabel;
     FAppMenu: TPopupMenu;
     FAppMenuImage: TImage;
     FWelcomeImage: TImage;
@@ -105,6 +106,7 @@ type
     procedure AppMenuClick(Sender: TObject);
     procedure HelpClick(Sender: TObject);
     procedure AddAppMenuItem(const ACaption: string; AHandler: TNotifyEvent);
+    procedure ProjectExportClick(Sender: TObject);
     procedure ReviewLinkClick(Sender: TObject);
     procedure NotesToggleClick(Sender: TObject);
     procedure UpdateNotesPreviewState;
@@ -382,6 +384,19 @@ begin
   FProjectBackLabel.Font.Color := TColor($006B3D1E);
   FProjectBackLabel.Visible := False;
   FProjectBackLabel.OnClick := @CloseProjectClick;
+
+  // Export direkt aus der Projektübersicht (gleiche Aktion wie in der Kapitelansicht)
+  FProjectExportLabel := TLabel.Create(Self);
+  FProjectExportLabel.Parent := ProjectPanel;
+  FProjectExportLabel.Anchors := [akTop, akRight];
+  FProjectExportLabel.Left := ProjectPanel.ClientWidth - 90;
+  FProjectExportLabel.Top := 4;
+  FProjectExportLabel.Caption := 'Export ▼';
+  FProjectExportLabel.Cursor := crHandPoint;
+  FProjectExportLabel.Font.Color := TColor($006B3D1E);
+  FProjectExportLabel.Font.Style := [fsBold];
+  FProjectExportLabel.Visible := False;
+  FProjectExportLabel.OnClick := @ProjectExportClick;
 
   // Begrüßungsbild für die leere Startansicht (noch keine Projekte vorhanden)
   FWelcomeImage := TImage.Create(Self);
@@ -800,6 +815,8 @@ begin
       FDashboardBox.Visible := False;
     if Assigned(FProjectBackLabel) then
       FProjectBackLabel.Visible := False;
+    if Assigned(FProjectExportLabel) then
+      FProjectExportLabel.Visible := False;
     ClearDashboardLinks;
     RebuildProjectCards;
     // Eule nur zeigen, solange es noch keine Projektkacheln gibt
@@ -813,6 +830,11 @@ begin
     FWelcomeImage.Visible := False;
   if Assigned(FProjectBackLabel) then
     FProjectBackLabel.Visible := True;
+  if Assigned(FProjectExportLabel) then
+  begin
+    FProjectExportLabel.Left := ProjectPanel.ClientWidth - 90;
+    FProjectExportLabel.Visible := True;
+  end;
   ComputeDashboardData;
   if Assigned(FDashboardBox) then
   begin
@@ -1306,6 +1328,14 @@ begin
   // Menü unterhalb des Icons öffnen
   P := FAppMenuImage.ClientToScreen(Point(0, FAppMenuImage.Height));
   FAppMenu.PopUp(P.X, P.Y);
+end;
+
+procedure TMainForm.ProjectExportClick(Sender: TObject);
+begin
+  if not Assigned(FProject) then
+    Exit;
+  RebuildExportPopupMenu;
+  ShowPopupMenuBelow(FProjectExportLabel, FExportPopupMenu);
 end;
 
 procedure TMainForm.HelpClick(Sender: TObject);

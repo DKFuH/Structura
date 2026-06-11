@@ -28,6 +28,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 - Open-tasks checklist in the chapter view: add tasks via an input field (Enter or "+"), tick them off with checkboxes. Tasks are stored as Markdown checkboxes (`- [ ]` / `- [x]`) in the chapter notes, so they stay readable and editable without the app and feed the dashboard and review-table counts
 - The chapter view now scales with the window: notes, tasks, and preview reflow to the available width and height instead of staying at fixed positions
 - Gentle hint line on the dashboard: a single quiet row summarising drafts still remaining, chapters with open tasks, and chapters untouched for 30+ days — informs without nagging (design principle "Mitdenken ohne Dominieren")
+- Export is now reachable directly from the project overview ("Export ▼" top-right), not only from the chapter view — opens the same export menu and dialog
 - "← Zur Projektliste" link on the project overview closes the current project and returns to the start screen with the recently-opened tiles (saves notes first)
 - Header menu (hamburger icon) bundles the rare/global actions — Settings, Erste Schritte (Hilfe), and About — instead of scattering them across a sidebar button and a separate icon. The sidebar "Einstellungen" button is gone; primary workflow actions stay visible
 
