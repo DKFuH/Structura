@@ -15,6 +15,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 - The chapter view now scales with the window: notes, tasks, and preview reflow to the available width and height instead of staying at fixed positions
 - Gentle hint line on the dashboard: a single quiet row summarising drafts still remaining, chapters with open tasks, and chapters untouched for 30+ days — informs without nagging (design principle "Mitdenken ohne Dominieren")
 - "← Zur Projektliste" link on the project overview closes the current project and returns to the start screen with the recently-opened tiles (saves notes first)
+- Header menu (hamburger icon) bundles the rare/global actions — Settings, Erste Schritte (Hilfe), and About — instead of scattering them across a sidebar button and a separate icon. The sidebar "Einstellungen" button is gone; primary workflow actions stay visible
 
 ### Changed
 

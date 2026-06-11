@@ -27,6 +27,8 @@ type
     FExportPopupMenu: TPopupMenu;
     FBackLabel: TLabel;
     FProjectBackLabel: TLabel;
+    FAppMenu: TPopupMenu;
+    FAppMenuImage: TImage;
     FWelcomeImage: TImage;
     FProjectCards: array of TPanel;
     FDeferredProjectFolder: string;
@@ -100,6 +102,9 @@ type
     procedure FormKeyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure AboutLinkClick(Sender: TObject);
     procedure CloseProjectClick(Sender: TObject);
+    procedure AppMenuClick(Sender: TObject);
+    procedure HelpClick(Sender: TObject);
+    procedure AddAppMenuItem(const ACaption: string; AHandler: TNotifyEvent);
     procedure ReviewLinkClick(Sender: TObject);
     procedure NotesToggleClick(Sender: TObject);
     procedure UpdateNotesPreviewState;
@@ -280,6 +285,8 @@ begin
   TextMakerButton.Visible := False;
   OpenFolderButton.Visible := False;
   PdfPreviewButton.Visible := False;
+  // Einstellungen sind ins Header-Menü gewandert
+  SettingsButton.Visible := False;
   CopyTextButton.Visible := False;
   OpenChapterButton.Caption := 'Öffnen mit ▼';
   WordButton.Caption := 'Prüfen mit ▼';
@@ -328,26 +335,30 @@ begin
   // Größenabhängiges Layout der Kapitelansicht
   ChapterPanel.OnResize := @LayoutChapterView;
 
-  // Über-Dialog (Version, Lizenzen, Icon-Attribution)
-  with TImage.Create(Self) do
-  begin
-    Parent := HeaderPanel;
-    Anchors := [akTop, akRight];
-    SetBounds(HeaderPanel.ClientWidth - 40, 12, 24, 24);
-    Proportional := True;
-    Stretch := True;
-    Cursor := crHandPoint;
-    Hint := 'Über Structura';
-    ShowHint := True;
-    OnClick := @AboutLinkClick;
-    if FileExists(AssetPath('assets\buttons\about.png')) then
-      try
-        Picture.LoadFromFile(AssetPath('assets\buttons\about.png'));
-      except
-        // Ohne Icon bleibt der Über-Dialog über das Bild unerreichbar —
-        // dann eben gar nicht anzeigen, der README-Hinweis bleibt bestehen
-      end;
-  end;
+  // Header-Menü für seltene/globale Aktionen (Einstellungen, Hilfe, Über).
+  // Häufige Workflow-Aktionen bleiben als sichtbare Buttons.
+  FAppMenu := TPopupMenu.Create(Self);
+  AddAppMenuItem('Einstellungen', @SettingsClick);
+  AddAppMenuItem('Erste Schritte (Hilfe)', @HelpClick);
+  AddAppMenuItem('-', nil);
+  AddAppMenuItem('Über Structura', @AboutLinkClick);
+
+  FAppMenuImage := TImage.Create(Self);
+  FAppMenuImage.Parent := HeaderPanel;
+  FAppMenuImage.Anchors := [akTop, akRight];
+  FAppMenuImage.SetBounds(HeaderPanel.ClientWidth - 40, 12, 24, 24);
+  FAppMenuImage.Proportional := True;
+  FAppMenuImage.Stretch := True;
+  FAppMenuImage.Cursor := crHandPoint;
+  FAppMenuImage.Hint := 'Menü';
+  FAppMenuImage.ShowHint := True;
+  FAppMenuImage.OnClick := @AppMenuClick;
+  if FileExists(AssetPath('assets\buttons\menu.png')) then
+    try
+      FAppMenuImage.Picture.LoadFromFile(AssetPath('assets\buttons\menu.png'));
+    except
+      // Ohne Icon bleibt das Menü dennoch klickbar (24×24-Fläche)
+    end;
 
   // Tastaturnavigation: Alt+←/→ Kapitel, Alt+O nächstes offenes, Alt+P nächstes Problem
   KeyPreview := True;
@@ -1276,6 +1287,30 @@ end;
 procedure TMainForm.AboutLinkClick(Sender: TObject);
 begin
   ShowAboutDialog;
+end;
+
+procedure TMainForm.AddAppMenuItem(const ACaption: string; AHandler: TNotifyEvent);
+var
+  Item: TMenuItem;
+begin
+  Item := TMenuItem.Create(FAppMenu);
+  Item.Caption := ACaption;
+  Item.OnClick := AHandler;
+  FAppMenu.Items.Add(Item);
+end;
+
+procedure TMainForm.AppMenuClick(Sender: TObject);
+var
+  P: TPoint;
+begin
+  // Menü unterhalb des Icons öffnen
+  P := FAppMenuImage.ClientToScreen(Point(0, FAppMenuImage.Height));
+  FAppMenu.PopUp(P.X, P.Y);
+end;
+
+procedure TMainForm.HelpClick(Sender: TObject);
+begin
+  OpenURL('https://github.com/DKFuH/Structura/blob/main/docs/first-steps.md');
 end;
 
 procedure TMainForm.NotesToggleClick(Sender: TObject);
