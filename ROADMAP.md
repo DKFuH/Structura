@@ -41,12 +41,10 @@ When a project is open, the overview should answer at a glance: what is done, wh
 
 A view built for the revision phase, not the drafting phase.
 
-**Done:**
+**Done (released as 0.3.0):**
 - chapter review table (number | chapter | status | words | notes | open tasks), double-click jumps to the chapter
 - Markdown notes preview panel (toggle between edit and rendered view)
-
-**Planned:**
-- more robust DOCX text preview
+- more robust DOCX text preview: in-memory extraction, list bullets, table cells, lock-aware error handling
 
 ## 0.4.x — Export
 

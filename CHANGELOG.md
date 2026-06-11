@@ -7,12 +7,16 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
-## [Unreleased — 0.3.0]
+## [0.3.0] — 2026-06-11
 
 ### Added
 
 - Review table ("Review-Ansicht öffnen" on the project overview): all chapters with number, title, status, word count, notes indicator, and open-task count; dividers shown as section rows; double-click or "Zum Kapitel" jumps straight to the chapter
 - Markdown preview for chapter notes: a "Vorschau"/"Bearbeiten" toggle next to the notes heading renders headings, lists, checklists, bold/italic/code, and horizontal rules (TurboPower iPro HTML panel, built-in Lazarus package)
+
+### Changed
+
+- DOCX text preview rewritten for robustness: extraction happens in memory (no temp directory), list paragraphs get bullet markers, table cells are tab-separated; if the file is locked by another program the preview retries via a copy and reports the real cause instead of claiming corruption
 
 ---
 
