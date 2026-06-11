@@ -7,7 +7,8 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls, StdCtrls,
-  Buttons, ComCtrls, Menus, IpHtml, StructuraTypes, OfficeDetection, AppSettings;
+  Buttons, ComCtrls, CheckLst, Menus, IpHtml, StructuraTypes, OfficeDetection,
+  AppSettings;
 
 type
   TMainForm = class(TForm)
@@ -36,7 +37,18 @@ type
     FNotesHtmlPanel: TIpHtmlPanel;
     FNotesToggleLabel: TLabel;
     FNotesPreviewActive: Boolean;
+    FTaskLabel: TLabel;
+    FTaskList: TCheckListBox;
+    FTaskEdit: TEdit;
+    FTaskAddButton: TButton;
+    FTaskLineIndex: array of Integer;
     procedure ConfigureUi;
+    procedure LayoutChapterView(Sender: TObject);
+    procedure RefreshChapterTasks;
+    procedure UpdateChapterTaskCount;
+    procedure TaskListClickCheck(Sender: TObject);
+    procedure AddChapterTaskClick(Sender: TObject);
+    procedure TaskEditKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure RebuildProjectCards;
     procedure ClearProjectCards;
     procedure ProjectCardClick(Sender: TObject);
@@ -289,6 +301,29 @@ begin
   FNotesToggleLabel.Cursor := crHandPoint;
   FNotesToggleLabel.Font.Color := TColor($00B05A1E);
   FNotesToggleLabel.OnClick := @NotesToggleClick;
+
+  // Offene Aufgaben: Checkliste über den `- [ ]`-Zeilen der Kapitelnotizen
+  FTaskLabel := TLabel.Create(Self);
+  FTaskLabel.Parent := ChapterPanel;
+  FTaskLabel.Caption := 'Offene Aufgaben';
+  FTaskLabel.Font.Style := [fsBold];
+
+  FTaskList := TCheckListBox.Create(Self);
+  FTaskList.Parent := ChapterPanel;
+  FTaskList.OnClickCheck := @TaskListClickCheck;
+
+  FTaskEdit := TEdit.Create(Self);
+  FTaskEdit.Parent := ChapterPanel;
+  FTaskEdit.TextHint := 'Neue Aufgabe – Enter zum Hinzufügen';
+  FTaskEdit.OnKeyDown := @TaskEditKeyDown;
+
+  FTaskAddButton := TButton.Create(Self);
+  FTaskAddButton.Parent := ChapterPanel;
+  FTaskAddButton.Caption := '+';
+  FTaskAddButton.OnClick := @AddChapterTaskClick;
+
+  // Größenabhängiges Layout der Kapitelansicht
+  ChapterPanel.OnResize := @LayoutChapterView;
 
   // Über-Dialog (Version, Lizenzen, Icon-Attribution)
   with TImage.Create(Self) do
@@ -805,7 +840,6 @@ var
   Meta: TStringList;
   Sequence: Integer;
   ComboIndex: Integer;
-  OpenTasks: Integer;
 begin
   Item := CurrentItem;
   if not Assigned(Item) then
@@ -821,9 +855,6 @@ begin
       Meta.Add('Datei: ' + Item.FileName);
       Meta.Add('Geändert: ' + FileModifiedText(FileName));
       Meta.Add('Wortzahl: ' + IntToStr(ChapterWordCount(Item)));
-      OpenTasks := CountOpenTasksInNotes(AbsoluteItemNotesFileName(Item));
-      if OpenTasks > 0 then
-        Meta.Add(Format('Offene Aufgaben: %d', [OpenTasks]));
       ChapterMetaLabel.Caption := Meta.Text;
 
       FCurrentPreviewText := TDocxPreview.LoadPreviewText(FileName);
@@ -849,9 +880,19 @@ begin
       NotesLabel.Caption := 'Kapitelnotizen (.md)';
       PreviewLabel.Caption := 'Textvorschau';
       UpdateNotesPreviewState;
+      RefreshChapterTasks;
+      FTaskLabel.Visible := True;
+      FTaskList.Visible := True;
+      FTaskEdit.Visible := True;
+      FTaskAddButton.Visible := True;
+      LayoutChapterView(nil);
     end
     else
     begin
+      FTaskLabel.Visible := False;
+      FTaskList.Visible := False;
+      FTaskEdit.Visible := False;
+      FTaskAddButton.Visible := False;
       ChapterHeadingLabel.Caption := 'Trenner: ' + Item.Title;
       ChapterMetaLabel.Caption := 'Dieser Eintrag gliedert das Buch in Teile und besitzt keine Kapiteldatei.';
       FCurrentPreviewText := '';
@@ -1202,6 +1243,193 @@ begin
     FNotesToggleLabel.Caption := 'Bearbeiten'
   else
     FNotesToggleLabel.Caption := 'Vorschau';
+end;
+
+procedure TMainForm.LayoutChapterView(Sender: TObject);
+const
+  Margin = 24;
+  Gap = 26;
+  RowTop = 316;       // Höhe der Spaltenüberschriften
+  ColTop = 344;       // Beginn der Inhalte
+  TaskListH = 120;
+  InputH = 27;
+  LabelH = 28;
+var
+  W, H, ColW, LeftX, RightX, Bottom: Integer;
+  NotesLabelY, NotesMemoY, NotesMemoH, InputY: Integer;
+begin
+  if not Assigned(FTaskList) then
+    Exit;
+  W := ChapterPanel.ClientWidth;
+  H := ChapterPanel.ClientHeight;
+
+  ColW := (W - 2 * Margin - Gap) div 2;
+  if ColW < 220 then
+    ColW := 220;
+  LeftX := Margin;
+  RightX := Margin + ColW + Gap;
+  Bottom := H - Margin;
+
+  // Kopfbereich (volle Breite)
+  ChapterMetaLabel.Width := W - 2 * Margin;
+  ChapterActionPanel.Width := W - 2 * Margin;
+
+  // Linke Spalte: Aufgaben oben, Notizen darunter
+  FTaskLabel.SetBounds(LeftX, RowTop, ColW, 15);
+  FTaskList.SetBounds(LeftX, ColTop, ColW, TaskListH);
+  InputY := ColTop + TaskListH + 6;
+  FTaskAddButton.SetBounds(LeftX + ColW - 36, InputY, 36, InputH);
+  FTaskEdit.SetBounds(LeftX, InputY, ColW - 36 - 6, InputH);
+
+  NotesLabelY := InputY + InputH + 14;
+  NotesMemoY := NotesLabelY + LabelH;
+  NotesMemoH := Bottom - NotesMemoY;
+  if NotesMemoH < 80 then
+    NotesMemoH := 80;
+  NotesLabel.SetBounds(LeftX, NotesLabelY, 200, 15);
+  FNotesToggleLabel.Left := LeftX + ColW - 70;
+  FNotesToggleLabel.Top := NotesLabelY;
+  NotesMemo.SetBounds(LeftX, NotesMemoY, ColW, NotesMemoH);
+  if Assigned(FNotesHtmlPanel) then
+    FNotesHtmlPanel.SetBounds(LeftX, NotesMemoY, ColW, NotesMemoH);
+
+  // Rechte Spalte: Textvorschau über die volle Höhe
+  PreviewLabel.SetBounds(RightX, RowTop, ColW, 15);
+  PreviewMemo.SetBounds(RightX, ColTop, ColW, Bottom - ColTop);
+end;
+
+// Wandelt eine Notizzeile in eine Aufgabe um bzw. erkennt deren Status.
+// Liefert True, wenn die Zeile eine Markdown-Checkbox ist.
+function ParseTaskLine(const ALine: string; out ADone: Boolean;
+  out AText: string): Boolean;
+var
+  Trimmed: string;
+begin
+  Result := False;
+  Trimmed := TrimLeft(ALine);
+  if (AnsiStartsStr('- [', Trimmed) or AnsiStartsStr('* [', Trimmed)) and
+     (Length(Trimmed) >= 5) and (Trimmed[5] = ']') then
+  begin
+    ADone := (Trimmed[4] = 'x') or (Trimmed[4] = 'X');
+    AText := Trim(Copy(Trimmed, 6, MaxInt));
+    Result := True;
+  end;
+end;
+
+procedure TMainForm.RefreshChapterTasks;
+var
+  I: Integer;
+  Done: Boolean;
+  TaskText: string;
+begin
+  if not Assigned(FTaskList) then
+    Exit;
+  FTaskList.Items.BeginUpdate;
+  try
+    FTaskList.Items.Clear;
+    SetLength(FTaskLineIndex, 0);
+    for I := 0 to NotesMemo.Lines.Count - 1 do
+      if ParseTaskLine(NotesMemo.Lines[I], Done, TaskText) then
+      begin
+        FTaskList.Items.Add(TaskText);
+        FTaskList.Checked[FTaskList.Items.Count - 1] := Done;
+        SetLength(FTaskLineIndex, Length(FTaskLineIndex) + 1);
+        FTaskLineIndex[High(FTaskLineIndex)] := I;
+      end;
+  finally
+    FTaskList.Items.EndUpdate;
+  end;
+  UpdateChapterTaskCount;
+end;
+
+procedure TMainForm.UpdateChapterTaskCount;
+var
+  I, Open: Integer;
+begin
+  if not Assigned(FTaskList) then
+    Exit;
+  Open := 0;
+  for I := 0 to FTaskList.Items.Count - 1 do
+    if not FTaskList.Checked[I] then
+      Inc(Open);
+  if FTaskList.Items.Count = 0 then
+    FTaskLabel.Caption := 'Offene Aufgaben'
+  else
+    FTaskLabel.Caption := Format('Offene Aufgaben (%d von %d)',
+      [Open, FTaskList.Items.Count]);
+end;
+
+procedure TMainForm.TaskListClickCheck(Sender: TObject);
+var
+  Idx, LineIdx: Integer;
+  Line, Trimmed, Indent: string;
+  BoxPos: Integer;
+begin
+  Idx := FTaskList.ItemIndex;
+  if (Idx < 0) or (Idx > High(FTaskLineIndex)) then
+    Exit;
+  LineIdx := FTaskLineIndex[Idx];
+  if (LineIdx < 0) or (LineIdx >= NotesMemo.Lines.Count) then
+    Exit;
+
+  // `[ ]` ↔ `[x]` in der Originalzeile umschalten, Einrückung erhalten
+  Line := NotesMemo.Lines[LineIdx];
+  Trimmed := TrimLeft(Line);
+  Indent := Copy(Line, 1, Length(Line) - Length(Trimmed));
+  BoxPos := 4; // Position des Status-Zeichens in "- [ ]"
+  if Length(Trimmed) >= 5 then
+  begin
+    if FTaskList.Checked[Idx] then
+      Trimmed[BoxPos] := 'x'
+    else
+      Trimmed[BoxPos] := ' ';
+    FUpdatingUi := True;
+    try
+      NotesMemo.Lines[LineIdx] := Indent + Trimmed;
+    finally
+      FUpdatingUi := False;
+    end;
+    PersistChapterNotes;
+    UpdateChapterTaskCount;
+    if FNotesPreviewActive then
+      UpdateNotesPreviewState;
+  end;
+end;
+
+procedure TMainForm.AddChapterTaskClick(Sender: TObject);
+var
+  TaskText: string;
+begin
+  TaskText := Trim(FTaskEdit.Text);
+  if TaskText = '' then
+    Exit;
+  if not Assigned(CurrentChapter) then
+    Exit;
+
+  // Aufgabe als Markdown-Checkbox an die Notizen anhängen
+  FUpdatingUi := True;
+  try
+    NotesMemo.Lines.Add('- [ ] ' + TaskText);
+  finally
+    FUpdatingUi := False;
+  end;
+  FTaskEdit.Clear;
+  PersistChapterNotes;
+  RefreshChapterTasks;
+  UpdateChapterTaskCount;
+  if FNotesPreviewActive then
+    UpdateNotesPreviewState;
+  FTaskEdit.SetFocus;
+end;
+
+procedure TMainForm.TaskEditKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  if Key = VK_RETURN then
+  begin
+    AddChapterTaskClick(Sender);
+    Key := 0;
+  end;
 end;
 
 procedure TMainForm.ReviewLinkClick(Sender: TObject);

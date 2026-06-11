@@ -9,9 +9,15 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added
+
+- Open-tasks checklist in the chapter view: add tasks via an input field (Enter or "+"), tick them off with checkboxes. Tasks are stored as Markdown checkboxes (`- [ ]` / `- [x]`) in the chapter notes, so they stay readable and editable without the app and feed the dashboard and review-table counts
+- The chapter view now scales with the window: notes, tasks, and preview reflow to the available width and height instead of staying at fixed positions
+
 ### Changed
 
 - Projects without a cover now show an illustrated "Kein Cover" placeholder (project overview and start view tiles) instead of a plain gray box
+- Open-task count moved from the chapter metadata line into the tasks panel heading ("Offene Aufgaben (2 von 5)")
 
 ### Fixed
 
