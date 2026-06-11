@@ -17,6 +17,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 ### Changed
 
 - Export now always produces a real `master.docx`, generated natively (OOXML written directly, no LibreOffice required) — title page, part headings, and chapter headings with page breaks. Previously DOCX was only created when LibreOffice was installed; without it you only got Markdown/HTML. PDF remains optional via LibreOffice and is now converted from the native DOCX
+- After a successful export, Structura asks whether to open the DOCX or the export folder
 
 ### Fixed
 

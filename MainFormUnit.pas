@@ -3325,6 +3325,7 @@ var
   InfoText: string;
   Options: TExportOptions;
   Digits: Integer;
+  MasterDocx, ExportFolder: string;
 begin
   if not Assigned(FProject) then
     Exit;
@@ -3335,10 +3336,28 @@ begin
     Digits := FSettings.ChapterNumberDigits;
   if not ShowExportDialog(FProject, Digits, Options) then
     Exit;
-  if TDocumentWorkflow.ExportMasterDocument(FProject, Options, InfoText) then
-    MessageDlg('Export abgeschlossen', InfoText, mtInformation, [mbOK], 0)
-  else
+  if not TDocumentWorkflow.ExportMasterDocument(FProject, Options, InfoText) then
+  begin
     MessageDlg('Export fehlgeschlagen', InfoText, mtError, [mbOK], 0);
+    Exit;
+  end;
+
+  ExportFolder := IncludeTrailingPathDelimiter(FProject.FolderPath) + 'export';
+  MasterDocx := IncludeTrailingPathDelimiter(ExportFolder) + 'master.docx';
+
+  // Nach erfolgreichem Export anbieten, das Ergebnis zu öffnen
+  case QuestionDlg('Export abgeschlossen',
+    InfoText + LineEnding + LineEnding + 'Was möchtest du tun?',
+    mtConfirmation,
+    [mrYes, 'DOCX öffnen', mrAll, 'Ordner öffnen', mrCancel, 'Schließen'], 0) of
+    mrYes:
+      if FileExists(MasterDocx) then
+        OpenDocument(MasterDocx)
+      else
+        ShowInFileManager(ExportFolder);
+    mrAll:
+      ShowInFileManager(ExportFolder);
+  end;
 end;
 
 procedure TMainForm.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
