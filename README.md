@@ -1,25 +1,40 @@
 # Structura
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![GitHub Release](https://img.shields.io/github/v/release/DKFuH/Structura)](https://github.com/DKFuH/Structura/releases/latest)
 
 Structura is a local Windows desktop application for organizing non-fiction book projects as chapter-based folders on disk. It is built with Free Pascal and Lazarus and intentionally focuses on project structure, notes, preview, and export workflows instead of becoming a DOCX editor.
 
-## Release status
+## Download
 
-Structura is being prepared for its first open-source release, `0.1.0`.
+Pre-built Windows binaries are available on the [Releases page](https://github.com/DKFuH/Structura/releases).
 
-The current scope is intentionally small and practical:
+Download the latest `Structura-vX.X.X-windows-x64.zip`, extract it anywhere, and run `Structura.exe`. No installer required.
 
-- create and open real project folders
+## Getting started
+
+On first launch, a three-step setup wizard guides you through the initial configuration:
+
+1. **Root folder** — choose a folder that will contain your book project subfolders, for example `C:\Books`. Structura scans this folder for existing projects on startup.
+2. **Office tools** — Word, LibreOffice, and SoftMaker TextMaker are detected automatically. Paths can be changed in Settings at any time.
+3. **Done** — the wizard shows what was found and you can start immediately.
+
+To create your first project, click **Neues Projekt**, enter a title, and Structura creates a named subfolder with the full project structure.
+
+For a step-by-step walkthrough see [`docs/first-steps.md`](docs/first-steps.md).
+
+## What Structura does
+
+- create and open book project folders
 - manage chapters and divider sections
 - reorder chapters with drag and drop
 - store project notes and chapter notes as Markdown files
 - preview extracted text from `.docx` chapter files
 - open chapters in external editors
-- detect optional office targets such as Word, LibreOffice, and TextMaker
+- detect optional office tools (Word, LibreOffice, TextMaker)
 - export a combined master document
 
-The repository is usable and buildable, but `0.1.0` should still be treated as an early release focused on local desktop workflows rather than a polished end-user product.
+`0.1.0` is an early release focused on local desktop workflows.
 
 ## What Structura is
 
