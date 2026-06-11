@@ -209,9 +209,9 @@ end;
 
 procedure TMainForm.ConfigureUi;
 begin
-  Constraints.MinWidth := 1120;
-  Constraints.MinHeight := 720;
-  Position := poScreenCenter;
+  Constraints.MinWidth := 900;
+  Constraints.MinHeight := 600;
+  WindowState := wsMaximized;
   ProjectPanel.Visible := True;
   ChapterPanel.Visible := False;
   ChapterActionPanel.AutoWrap := True;
@@ -1391,42 +1391,85 @@ var
   Card: TPanel;
   CoverImg: TImage;
   TitleLbl, SubLbl, InfoLbl: TLabel;
-  Col, Row, CardW, CardH, ColSpacing, RowSpacing, StartTop, StartLeft: Integer;
+  Col, Row, ColCount, CardW, CardH, ColSpacing, RowSpacing, StartTop, StartLeft: Integer;
   CoverPath: string;
+  FolderPaths: TStringList;
+  SubDir: string;
+  SearchRec: TSearchRec;
 begin
   ClearProjectCards;
-  if not Assigned(FSettings) or (FSettings.RecentProjectCount = 0) then
+  if not Assigned(FSettings) then
     Exit;
 
-  CardW := 280;
-  CardH := 90;
-  ColSpacing := 16;
-  RowSpacing := 12;
-  StartLeft := 24;
-  StartTop := 110;
+  // Projektliste aufbauen: Standardordner scannen + RecentProjects (dedupliziert)
+  FolderPaths := TStringList.Create;
+  try
+    // 1. Standardordner scannen
+    if (Trim(FSettings.DefaultProjectFolder) <> '') and
+       DirectoryExists(FSettings.DefaultProjectFolder) then
+    begin
+      if FindFirst(IncludeTrailingPathDelimiter(FSettings.DefaultProjectFolder) + '*',
+                   faDirectory, SearchRec) = 0 then
+      begin
+        try
+          repeat
+            if ((SearchRec.Attr and faDirectory) <> 0) and
+               (SearchRec.Name <> '.') and (SearchRec.Name <> '..') then
+            begin
+              SubDir := IncludeTrailingPathDelimiter(FSettings.DefaultProjectFolder) +
+                        SearchRec.Name;
+              if FileExists(TProjectStore.ProjectFileName(SubDir)) then
+                FolderPaths.Add(SubDir);
+            end;
+          until FindNext(SearchRec) <> 0;
+        finally
+          FindClose(SearchRec);
+        end;
+      end;
+    end;
 
-  SetLength(FProjectCards, FSettings.RecentProjectCount);
-  for I := 0 to FSettings.RecentProjectCount - 1 do
-  begin
-    Summary := TProjectStore.LoadSummaryFromFolder(FSettings.RecentProjects[I]);
-    if not Summary.Valid then
-      Summary.Title := ExtractFileName(FSettings.RecentProjects[I]);
+    // 2. RecentProjects ergänzen (nur wenn noch nicht im Scan enthalten)
+    for I := 0 to FSettings.RecentProjectCount - 1 do
+    begin
+      if FolderPaths.IndexOf(FSettings.RecentProjects[I]) < 0 then
+        FolderPaths.Add(FSettings.RecentProjects[I]);
+    end;
 
-    Col := I mod 3;
-    Row := I div 3;
+    if FolderPaths.Count = 0 then
+      Exit;
 
-    Card := TPanel.Create(Self);
-    Card.Parent := ProjectPanel;
-    Card.Left := StartLeft + Col * (CardW + ColSpacing);
-    Card.Top := StartTop + Row * (CardH + RowSpacing);
-    Card.Width := CardW;
-    Card.Height := CardH;
-    Card.BevelOuter := bvRaised;
-    Card.BevelInner := bvNone;
-    Card.Color := $00FAF8F5;
-    Card.Cursor := crHandPoint;
-    Card.Hint := FSettings.RecentProjects[I];
-    Card.OnClick := @ProjectCardClick;
+    CardW := 280;
+    CardH := 90;
+    ColSpacing := 16;
+    RowSpacing := 12;
+    StartLeft := 24;
+    StartTop := 110;
+
+    // Spaltenanzahl dynamisch nach verfügbarer Breite
+    ColCount := Max(1, (ProjectPanel.ClientWidth - StartLeft) div (CardW + ColSpacing));
+
+    SetLength(FProjectCards, FolderPaths.Count);
+    for I := 0 to FolderPaths.Count - 1 do
+    begin
+      Summary := TProjectStore.LoadSummaryFromFolder(FolderPaths[I]);
+      if not Summary.Valid then
+        Summary.Title := ExtractFileName(FolderPaths[I]);
+
+      Col := I mod ColCount;
+      Row := I div ColCount;
+
+      Card := TPanel.Create(Self);
+      Card.Parent := ProjectPanel;
+      Card.Left := StartLeft + Col * (CardW + ColSpacing);
+      Card.Top := StartTop + Row * (CardH + RowSpacing);
+      Card.Width := CardW;
+      Card.Height := CardH;
+      Card.BevelOuter := bvRaised;
+      Card.BevelInner := bvNone;
+      Card.Color := $00FAF8F5;
+      Card.Cursor := crHandPoint;
+      Card.Hint := FolderPaths[I];
+      Card.OnClick := @ProjectCardClick;
 
     // Mini-Cover
     CoverImg := TImage.Create(Card);
@@ -1441,7 +1484,7 @@ begin
     CoverImg.Cursor := crHandPoint;
     CoverImg.OnClick := @ProjectCardClick;
     // Hint mit Pfad damit der Click-Handler greift
-    CoverImg.Hint := FSettings.RecentProjects[I];
+    CoverImg.Hint := FolderPaths[I];
 
     if Summary.CoverImagePath <> '' then
     begin
@@ -1467,7 +1510,7 @@ begin
         BevelOuter := bvNone;
         Caption := '';
         Cursor := crHandPoint;
-        Hint := FSettings.RecentProjects[I];
+        Hint := FolderPaths[I];
         OnClick := @ProjectCardClick;
       end;
     end;
@@ -1485,7 +1528,7 @@ begin
     TitleLbl.Font.Size := 9;
     TitleLbl.Cursor := crHandPoint;
     TitleLbl.OnClick := @ProjectCardClick;
-    TitleLbl.Hint := FSettings.RecentProjects[I];
+    TitleLbl.Hint := FolderPaths[I];
 
     // Untertitel
     SubLbl := TLabel.Create(Card);
@@ -1501,7 +1544,7 @@ begin
     SubLbl.Font.Size := 8;
     SubLbl.Cursor := crHandPoint;
     SubLbl.OnClick := @ProjectCardClick;
-    SubLbl.Hint := FSettings.RecentProjects[I];
+    SubLbl.Hint := FolderPaths[I];
 
     // Kapitelzahl
     InfoLbl := TLabel.Create(Card);
@@ -1513,9 +1556,12 @@ begin
     InfoLbl.Font.Size := 8;
     InfoLbl.Cursor := crHandPoint;
     InfoLbl.OnClick := @ProjectCardClick;
-    InfoLbl.Hint := FSettings.RecentProjects[I];
+    InfoLbl.Hint := FolderPaths[I];
 
     FProjectCards[I] := Card;
+    end;
+  finally
+    FolderPaths.Free;
   end;
 end;
 
