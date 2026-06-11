@@ -5,7 +5,9 @@
 
 → [English documentation](README.md)
 
-Structura ist eine lokale Windows-Desktop-Anwendung zur Verwaltung von Sachbuch-Projekten als kapitelbasierte Ordner auf der Festplatte. Sie ist in Free Pascal und Lazarus gebaut und konzentriert sich bewusst auf Projektstruktur, Notizen, Vorschau und Export – nicht auf das Bearbeiten von DOCX-Dateien.
+Structura hilft Sachbuchautoren, große Manuskripte kapitelweise zu ordnen, zu prüfen und kontrolliert bis zum Export zu führen – ohne die Hoheit über ihre Dateien zu verlieren.
+
+Es ist eine lokale Windows-Desktop-Anwendung, gebaut mit Free Pascal und Lazarus. Structura bleibt bewusst im Hintergrund: keine DOCX-Bearbeitung, keine Cloud-Synchronisation, alle Projektdaten in normalen Ordnern, die auch ohne die App lesbar bleiben.
 
 ## Download
 
@@ -95,6 +97,11 @@ Die Textvorschau funktioniert ohne installiertes Office-Programm. PDF-Workflows 
 2. `Structura.lpi` in Lazarus öffnen.
 3. Projekt aus der IDE kompilieren.
 4. Bei veralteten Artefakten: Build-Ausgaben bereinigen und neu bauen.
+
+## Roadmap und Planung
+
+- geplante Richtung: [ROADMAP.md](ROADMAP.md)
+- Versionshistorie: [CHANGELOG.md](CHANGELOG.md)
 
 ## Lizenz
 

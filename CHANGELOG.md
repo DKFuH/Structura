@@ -7,6 +7,16 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [Unreleased] — 0.1.1
+
+### Changed
+
+- README tagline updated to reflect the actual user promise
+- ROADMAP.md added for public visibility of direction
+- German README (README.de.md) added
+
+---
+
 ## [0.1.0] — 2026-06-11
 
 First public release.

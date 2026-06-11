@@ -5,7 +5,9 @@
 
 → [Deutsche Dokumentation](README.de.md)
 
-Structura is a local Windows desktop application for organizing non-fiction book projects as chapter-based folders on disk. It is built with Free Pascal and Lazarus and intentionally focuses on project structure, notes, preview, and export workflows instead of becoming a DOCX editor.
+Structura helps non-fiction authors organize large manuscripts chapter by chapter, review and check their writing, and guide the work through to export — without losing control of their own files.
+
+It is a local Windows desktop application built with Free Pascal and Lazarus. Structura deliberately stays out of the way: it does not edit DOCX files, does not sync to any cloud, and keeps all project data in plain folders that remain readable without the app.
 
 ## Download
 
@@ -144,9 +146,9 @@ This keeps the app usable on machines that do not have a full office suite insta
 
 ## Release notes and planning
 
-- roadmap and open release tasks: `docs/WORKLIST.md`
-- release summary for `0.1.0`: `docs/release-notes.md`
-- version history: `CHANGELOG.md`
+- planned direction: [ROADMAP.md](ROADMAP.md)
+- version history: [CHANGELOG.md](CHANGELOG.md)
+- internal working tasks: `docs/WORKLIST.md`
 
 ## Contributing expectations
 
