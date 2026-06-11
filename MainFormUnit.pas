@@ -26,6 +26,7 @@ type
     FCopyPopupMenu: TPopupMenu;
     FExportPopupMenu: TPopupMenu;
     FBackLabel: TLabel;
+    FProjectBackLabel: TLabel;
     FWelcomeImage: TImage;
     FProjectCards: array of TPanel;
     FDeferredProjectFolder: string;
@@ -98,6 +99,7 @@ type
     procedure DashboardLinkClick(Sender: TObject);
     procedure FormKeyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure AboutLinkClick(Sender: TObject);
+    procedure CloseProjectClick(Sender: TObject);
     procedure ReviewLinkClick(Sender: TObject);
     procedure NotesToggleClick(Sender: TObject);
     procedure UpdateNotesPreviewState;
@@ -358,6 +360,17 @@ begin
   FDashboardBox.OnPaint := @DashboardPaint;
   FDashboardBox.Visible := False;
   ProjectStatusLabel.Visible := False;
+
+  // Zurück zur Projektliste („Zuletzt geöffnet") aus dem offenen Projekt
+  FProjectBackLabel := TLabel.Create(Self);
+  FProjectBackLabel.Parent := ProjectPanel;
+  FProjectBackLabel.Left := 24;
+  FProjectBackLabel.Top := 4;
+  FProjectBackLabel.Caption := '← Zur Projektliste';
+  FProjectBackLabel.Cursor := crHandPoint;
+  FProjectBackLabel.Font.Color := TColor($006B3D1E);
+  FProjectBackLabel.Visible := False;
+  FProjectBackLabel.OnClick := @CloseProjectClick;
 
   // Begrüßungsbild für die leere Startansicht (noch keine Projekte vorhanden)
   FWelcomeImage := TImage.Create(Self);
@@ -774,6 +787,8 @@ begin
     end;
     if Assigned(FDashboardBox) then
       FDashboardBox.Visible := False;
+    if Assigned(FProjectBackLabel) then
+      FProjectBackLabel.Visible := False;
     ClearDashboardLinks;
     RebuildProjectCards;
     // Eule nur zeigen, solange es noch keine Projektkacheln gibt
@@ -785,6 +800,8 @@ begin
   ClearProjectCards;
   if Assigned(FWelcomeImage) then
     FWelcomeImage.Visible := False;
+  if Assigned(FProjectBackLabel) then
+    FProjectBackLabel.Visible := True;
   ComputeDashboardData;
   if Assigned(FDashboardBox) then
   begin
@@ -2678,6 +2695,22 @@ end;
 procedure TMainForm.BackToOverviewClick(Sender: TObject);
 begin
   ItemListBox.ItemIndex := -1;
+  SelectProjectOverview;
+end;
+
+procedure TMainForm.CloseProjectClick(Sender: TObject);
+begin
+  // Offene Notizen sichern, Projekt schließen und zur Startliste zurück
+  if Assigned(FProject) then
+  begin
+    PersistCurrentNotes;
+    PersistProjectNotes;
+    SaveProject;
+  end;
+  FSelectedIndex := -1;
+  ItemListBox.ItemIndex := -1;
+  FreeAndNil(FProject);
+  RefreshItemList;
   SelectProjectOverview;
 end;
 
