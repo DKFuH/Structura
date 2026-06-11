@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls, StdCtrls,
-  Buttons, ComCtrls, Menus, StructuraTypes, OfficeDetection, AppSettings;
+  Buttons, ComCtrls, Menus, IpHtml, StructuraTypes, OfficeDetection, AppSettings;
 
 type
   TMainForm = class(TForm)
@@ -33,6 +33,9 @@ type
     FOpenTaskCount: Integer;
     FNextStepText: string;
     FDashboardLinks: array of TLabel;
+    FNotesHtmlPanel: TIpHtmlPanel;
+    FNotesToggleLabel: TLabel;
+    FNotesPreviewActive: Boolean;
     procedure ConfigureUi;
     procedure RebuildProjectCards;
     procedure ClearProjectCards;
@@ -83,6 +86,8 @@ type
     procedure FormKeyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure AboutLinkClick(Sender: TObject);
     procedure ReviewLinkClick(Sender: TObject);
+    procedure NotesToggleClick(Sender: TObject);
+    procedure UpdateNotesPreviewState;
     procedure NavigateChapter(ADelta: Integer);
     procedure NavigateToNextWithStatus(AProblemOnly: Boolean);
     function EnsureUniqueRelativeFileName(const ARelative: string): string;
@@ -199,7 +204,7 @@ uses
   LCLIntf, LCLType, FileUtil, Process, Clipbrd, StrUtils, Math, DateUtils, Zipper,
   ProjectStore, ProjectDialogUnit, ElementDialogUnit, DocumentWorkflow,
   DocxPreview, SettingsStore, SettingsDialogUnit, FirstRunWizardUnit,
-  ImportProjectDialogUnit, AboutDialogUnit, ReviewDialogUnit;
+  ImportProjectDialogUnit, AboutDialogUnit, ReviewDialogUnit, MarkdownPreview;
 
 function NormalizeStoredPathForCompare(const APath: string): string;
 begin
@@ -266,6 +271,23 @@ begin
   ExportButton.Caption := 'Export ▼';
   WordButton.Visible := True;
   LibreButton.Visible := True;
+
+  // Markdown-Vorschau für Kapitelnotizen: HTML-Panel deckungsgleich über dem
+  // Memo, Umschalter neben der Notizen-Überschrift
+  FNotesPreviewActive := False;
+  FNotesHtmlPanel := TIpHtmlPanel.Create(Self);
+  FNotesHtmlPanel.Parent := ChapterPanel;
+  FNotesHtmlPanel.SetBounds(NotesMemo.Left, NotesMemo.Top, NotesMemo.Width, NotesMemo.Height);
+  FNotesHtmlPanel.Visible := False;
+
+  FNotesToggleLabel := TLabel.Create(Self);
+  FNotesToggleLabel.Parent := ChapterPanel;
+  FNotesToggleLabel.Left := NotesLabel.Left + 130;
+  FNotesToggleLabel.Top := NotesLabel.Top;
+  FNotesToggleLabel.Caption := 'Vorschau';
+  FNotesToggleLabel.Cursor := crHandPoint;
+  FNotesToggleLabel.Font.Color := TColor($00B05A1E);
+  FNotesToggleLabel.OnClick := @NotesToggleClick;
 
   // Über-Dialog (Version, Lizenzen, Icon-Attribution)
   with TImage.Create(Self) do
@@ -825,6 +847,7 @@ begin
       PreviewMemo.Enabled := True;
       NotesLabel.Caption := 'Kapitelnotizen (.md)';
       PreviewLabel.Caption := 'Textvorschau';
+      UpdateNotesPreviewState;
     end
     else
     begin
@@ -836,6 +859,7 @@ begin
         PreviewMemo.Text := 'Kein Kapitel ausgewählt.';
         NotesMemo.Text := '';
         ChapterStatusCombo.ItemIndex := -1;
+        UpdateNotesPreviewState;
       finally
         FUpdatingUi := False;
       end;
@@ -1150,6 +1174,33 @@ end;
 procedure TMainForm.AboutLinkClick(Sender: TObject);
 begin
   ShowAboutDialog;
+end;
+
+procedure TMainForm.NotesToggleClick(Sender: TObject);
+begin
+  FNotesPreviewActive := not FNotesPreviewActive;
+  UpdateNotesPreviewState;
+end;
+
+procedure TMainForm.UpdateNotesPreviewState;
+begin
+  if not Assigned(FNotesHtmlPanel) then
+    Exit;
+  if FNotesPreviewActive then
+  begin
+    try
+      FNotesHtmlPanel.SetHtmlFromStr(MarkdownToHtml(NotesMemo.Text));
+    except
+      // Render-Fehler: stillschweigend zurück in den Bearbeiten-Modus
+      FNotesPreviewActive := False;
+    end;
+  end;
+  FNotesHtmlPanel.Visible := FNotesPreviewActive;
+  NotesMemo.Visible := not FNotesPreviewActive;
+  if FNotesPreviewActive then
+    FNotesToggleLabel.Caption := 'Bearbeiten'
+  else
+    FNotesToggleLabel.Caption := 'Vorschau';
 end;
 
 procedure TMainForm.ReviewLinkClick(Sender: TObject);

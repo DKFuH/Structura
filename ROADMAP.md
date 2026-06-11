@@ -43,9 +43,9 @@ A view built for the revision phase, not the drafting phase.
 
 **Done:**
 - chapter review table (number | chapter | status | words | notes | open tasks), double-click jumps to the chapter
+- Markdown notes preview panel (toggle between edit and rendered view)
 
 **Planned:**
-- better notes view, Markdown notes with preview panel
 - more robust DOCX text preview
 
 ## 0.4.x — Export

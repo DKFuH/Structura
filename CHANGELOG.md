@@ -12,6 +12,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 ### Added
 
 - Review table ("Review-Ansicht öffnen" on the project overview): all chapters with number, title, status, word count, notes indicator, and open-task count; dividers shown as section rows; double-click or "Zum Kapitel" jumps straight to the chapter
+- Markdown preview for chapter notes: a "Vorschau"/"Bearbeiten" toggle next to the notes heading renders headings, lists, checklists, bold/italic/code, and horizontal rules (TurboPower iPro HTML panel, built-in Lazarus package)
 
 ---
 
