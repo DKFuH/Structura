@@ -35,16 +35,13 @@ When a project is open, the overview should answer at a glance: what is done, wh
 - problem chapters listed by name, clickable
 - recently edited chapters, clickable
 - per-chapter open-task count in the chapter view
-
-**Planned:**
-- fast navigation: next open chapter, next problem chapter (moves up from 0.3 if needed)
+- fast keyboard navigation: Alt+←/→ chapters, Alt+O next open, Alt+P next problem
 
 ## 0.3.x — Review mode (relief)
 
 A view built for the revision phase, not the drafting phase.
 
 - chapter review table: chapter | status | words | notes | open tasks
-- fast navigation: next/previous chapter, next open chapter, next problem chapter
 - better notes view, Markdown notes with preview panel
 - more robust DOCX text preview
 

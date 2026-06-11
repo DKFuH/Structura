@@ -80,6 +80,9 @@ type
     procedure ClearDashboardLinks;
     procedure RebuildDashboardLinks;
     procedure DashboardLinkClick(Sender: TObject);
+    procedure FormKeyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure NavigateChapter(ADelta: Integer);
+    procedure NavigateToNextWithStatus(AProblemOnly: Boolean);
     function EnsureUniqueRelativeFileName(const ARelative: string): string;
     function MakeSafeFileNamePart(const AValue: string): string;
     function CreateBackupCopy(const AAbsoluteFileName: string): Boolean;
@@ -262,6 +265,10 @@ begin
   WordButton.Visible := True;
   LibreButton.Visible := True;
 
+  // Tastaturnavigation: Alt+←/→ Kapitel, Alt+O nächstes offenes, Alt+P nächstes Problem
+  KeyPreview := True;
+  OnKeyDown := @FormKeyDownHandler;
+
   // Status-Dashboard in der Projektübersicht
   FDashboardBox := TPaintBox.Create(Self);
   FDashboardBox.Parent := ProjectPanel;
@@ -293,6 +300,16 @@ begin
   FBackLabel.Cursor := crHandPoint;
   FBackLabel.Font.Color := $006B3D1E;
   FBackLabel.OnClick := @BackToOverviewClick;
+
+  // Dezenter Hinweis auf die Tastaturnavigation
+  with TLabel.Create(Self) do
+  begin
+    Parent := ChapterPanel;
+    Left := 180;
+    Top := 2;
+    Caption := 'Alt+←/→ Kapitel wechseln · Alt+O nächstes offenes · Alt+P nächstes Problem';
+    Font.Color := clGrayText;
+  end;
 end;
 
 procedure TMainForm.ApplyOfficeOverrides;
@@ -1104,6 +1121,85 @@ begin
   end
   else if FStatusCounts[STATUS_FINAL_INDEX] > 0 then
     FNextStepText := 'Alle Kapitel final — bereit für den Export.';
+end;
+
+procedure TMainForm.NavigateChapter(ADelta: Integer);
+var
+  I: Integer;
+begin
+  if not Assigned(FProject) or (FProject.Count = 0) then
+    Exit;
+  I := FSelectedIndex + ADelta;
+  while (I >= 0) and (I < FProject.Count) do
+  begin
+    if FProject[I].ItemType = sitChapter then
+    begin
+      SelectItem(I);
+      Exit;
+    end;
+    I := I + ADelta;
+  end;
+end;
+
+procedure TMainForm.NavigateToNextWithStatus(AProblemOnly: Boolean);
+var
+  I, Steps, Index: Integer;
+  Item: TStructuraItem;
+  Matches: Boolean;
+begin
+  if not Assigned(FProject) or (FProject.Count = 0) then
+    Exit;
+  // Ringsuche ab dem aktuellen Kapitel, damit man sich durchklicken kann
+  for Steps := 1 to FProject.Count do
+  begin
+    Index := (FSelectedIndex + Steps + FProject.Count) mod FProject.Count;
+    Item := FProject[Index];
+    if Item.ItemType <> sitChapter then
+      Continue;
+    I := StatusIndex(Item.Status);
+    if AProblemOnly then
+      Matches := I = STATUS_PROBLEM_INDEX
+    else
+      Matches := I <> STATUS_FINAL_INDEX;
+    if Matches then
+    begin
+      SelectItem(Index);
+      Exit;
+    end;
+  end;
+  if AProblemOnly then
+    UpdateStatus('Keine Problemkapitel vorhanden.')
+  else
+    UpdateStatus('Keine offenen Kapitel — alles final.');
+end;
+
+procedure TMainForm.FormKeyDownHandler(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  if not (ssAlt in Shift) or not Assigned(FProject) then
+    Exit;
+  case Key of
+    VK_RIGHT:
+      begin
+        NavigateChapter(1);
+        Key := 0;
+      end;
+    VK_LEFT:
+      begin
+        NavigateChapter(-1);
+        Key := 0;
+      end;
+    VK_O:
+      begin
+        NavigateToNextWithStatus(False);
+        Key := 0;
+      end;
+    VK_P:
+      begin
+        NavigateToNextWithStatus(True);
+        Key := 0;
+      end;
+  end;
 end;
 
 procedure TMainForm.ClearDashboardLinks;
