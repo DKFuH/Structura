@@ -27,7 +27,9 @@ type
   TAppSettings = class
   private
     FWorkflowButtons: TObjectList;
+    FRecentProjects: TStringList;
     function GetWorkflowButton(Index: Integer): TWorkflowButtonConfig;
+    function GetRecentProject(Index: Integer): string;
   public
     DefaultProjectFolder: string;
     PreferredDocxEditor: string;
@@ -39,6 +41,9 @@ type
     procedure Clear;
     procedure Assign(Source: TAppSettings);
     function Clone: TAppSettings;
+    procedure AddRecentProject(const AFolder: string);
+    function RecentProjectCount: Integer;
+    property RecentProjects[Index: Integer]: string read GetRecentProject;
     procedure EnsureDefaultWorkflowButtons;
     function WorkflowButtonCount: Integer;
     function AddWorkflowButton: TWorkflowButtonConfig;
@@ -110,11 +115,13 @@ constructor TAppSettings.Create;
 begin
   inherited Create;
   FWorkflowButtons := TObjectList.Create(True);
+  FRecentProjects := TStringList.Create;
 end;
 
 destructor TAppSettings.Destroy;
 begin
   FWorkflowButtons.Free;
+  FRecentProjects.Free;
   inherited Destroy;
 end;
 
@@ -126,6 +133,7 @@ begin
   LibreOfficePathOverride := '';
   TextMakerPathOverride := '';
   FWorkflowButtons.Clear;
+  FRecentProjects.Clear;
 end;
 
 procedure TAppSettings.Assign(Source: TAppSettings);
@@ -143,11 +151,41 @@ begin
   LibreOfficePathOverride := Source.LibreOfficePathOverride;
   TextMakerPathOverride := Source.TextMakerPathOverride;
 
+  for I := 0 to Source.RecentProjectCount - 1 do
+    FRecentProjects.Add(Source.RecentProjects[I]);
+
   for I := 0 to Source.WorkflowButtonCount - 1 do
   begin
     Button := AddWorkflowButton;
     Button.Assign(Source.WorkflowButtons[I]);
   end;
+end;
+
+procedure TAppSettings.AddRecentProject(const AFolder: string);
+var
+  I: Integer;
+  Normalized: string;
+begin
+  Normalized := ExcludeTrailingPathDelimiter(AFolder);
+  // Duplikate entfernen (case-insensitiv)
+  for I := FRecentProjects.Count - 1 downto 0 do
+    if SameText(ExcludeTrailingPathDelimiter(FRecentProjects[I]), Normalized) then
+      FRecentProjects.Delete(I);
+  // Vorne einfügen
+  FRecentProjects.Insert(0, Normalized);
+  // Auf 8 begrenzen
+  while FRecentProjects.Count > 8 do
+    FRecentProjects.Delete(FRecentProjects.Count - 1);
+end;
+
+function TAppSettings.RecentProjectCount: Integer;
+begin
+  Result := FRecentProjects.Count;
+end;
+
+function TAppSettings.GetRecentProject(Index: Integer): string;
+begin
+  Result := FRecentProjects[Index];
 end;
 
 function TAppSettings.Clone: TAppSettings;
@@ -221,6 +259,7 @@ end;
 function TAppSettings.ToJson: TJSONObject;
 var
   Buttons: TJSONArray;
+  Recent: TJSONArray;
   I: Integer;
 begin
   Result := TJSONObject.Create;
@@ -229,6 +268,10 @@ begin
   Result.Add('wordPathOverride', WordPathOverride);
   Result.Add('libreOfficePathOverride', LibreOfficePathOverride);
   Result.Add('textMakerPathOverride', TextMakerPathOverride);
+  Recent := TJSONArray.Create;
+  for I := 0 to FRecentProjects.Count - 1 do
+    Recent.Add(FRecentProjects[I]);
+  Result.Add('recentProjects', Recent);
   Buttons := TJSONArray.Create;
   for I := 0 to FWorkflowButtons.Count - 1 do
     Buttons.Add(WorkflowButtons[I].ToJson);
@@ -239,6 +282,8 @@ procedure TAppSettings.AssignFromJson(AObject: TJSONObject);
 var
   Buttons: TJSONArray;
   ButtonsData: TJSONData;
+  RecentData: TJSONData;
+  Recent: TJSONArray;
   I: Integer;
   Button: TWorkflowButtonConfig;
 begin
@@ -248,6 +293,15 @@ begin
   WordPathOverride := AObject.Get('wordPathOverride', '');
   LibreOfficePathOverride := AObject.Get('libreOfficePathOverride', '');
   TextMakerPathOverride := AObject.Get('textMakerPathOverride', '');
+
+  RecentData := AObject.Find('recentProjects');
+  if RecentData is TJSONArray then
+  begin
+    Recent := TJSONArray(RecentData);
+    for I := 0 to Recent.Count - 1 do
+      if Recent.Items[I].JSONType = jtString then
+        FRecentProjects.Add(Recent.Items[I].AsString);
+  end;
 
   ButtonsData := AObject.Find('workflowButtons');
   if ButtonsData is TJSONArray then

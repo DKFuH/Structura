@@ -11,6 +11,16 @@ uses
 type
   TStructuraItemType = (sitChapter, sitDivider);
 
+  TProjectSummary = record
+    FolderPath: string;
+    Title: string;
+    Subtitle: string;
+    Author: string;
+    CoverImagePath: string;
+    ChapterCount: Integer;
+    Valid: Boolean;
+  end;
+
   TStructuraItem = class
   public
     Id: string;

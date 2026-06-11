@@ -25,7 +25,11 @@ type
     FCopyPopupMenu: TPopupMenu;
     FExportPopupMenu: TPopupMenu;
     FBackLabel: TLabel;
+    FProjectCards: array of TPanel;
     procedure ConfigureUi;
+    procedure RebuildProjectCards;
+    procedure ClearProjectCards;
+    procedure ProjectCardClick(Sender: TObject);
     procedure LoadButtonGlyph(AButton: TBitBtn; const AFileName: string);
     procedure ApplyOfficeOverrides;
     procedure SyncDetectedTargetsToSettings;
@@ -506,6 +510,11 @@ begin
   if not FileExists(TProjectStore.ProjectFileName(AFolder)) then
     raise Exception.Create('Im gewählten Ordner wurde keine structura.json gefunden.');
   SetProject(TProjectStore.LoadFromFolder(AFolder));
+  if Assigned(FSettings) then
+  begin
+    FSettings.AddRecentProject(AFolder);
+    TSettingsStore.Save(FSettings);
+  end;
   UpdateStatus('Projekt geöffnet: ' + FProject.Title);
 end;
 
@@ -576,18 +585,28 @@ begin
   if not Assigned(FProject) then
   begin
     CoverImage.Visible := False;
-    ProjectTitleLabel.Caption := 'Willkommen bei Structura';
-    ProjectSubtitleLabel.Caption := 'Lokales Buch-Cockpit für Kapitel, Teile und Notizen';
     ProjectAuthorLabel.Caption := '';
-    ProjectStatsLabel.Caption := 'Lege ein neues Projekt an oder öffne einen vorhandenen Ordner.';
-    ProjectStatusLabel.Caption := 'Die technische Programmdiagnose findest du in den Einstellungen.';
+    ProjectStatsLabel.Caption := '';
+    ProjectStatusLabel.Caption := '';
     OfficeSummaryLabel.Visible := False;
     ProjectNotesLabel.Visible := False;
     ProjectNotesMemo.Visible := False;
     ProjectNotesMemo.Text := '';
     CoverImage.Picture.Clear;
+    if Assigned(FSettings) and (FSettings.RecentProjectCount > 0) then
+    begin
+      ProjectTitleLabel.Caption := 'Zuletzt geöffnet';
+      ProjectSubtitleLabel.Caption := '';
+    end
+    else
+    begin
+      ProjectTitleLabel.Caption := 'Willkommen bei Structura';
+      ProjectSubtitleLabel.Caption := 'Lege ein neues Projekt an oder öffne einen vorhandenen Ordner.';
+    end;
+    RebuildProjectCards;
     Exit;
   end;
+  ClearProjectCards;
 
   CoverImage.Visible := True;
   OfficeSummaryLabel.Visible := False;
@@ -1331,6 +1350,173 @@ begin
   if not Assigned(FProject) then
     Exit;
   ShowInFileManager(FProject.FolderPath);
+end;
+
+procedure TMainForm.ClearProjectCards;
+var
+  I: Integer;
+begin
+  for I := 0 to High(FProjectCards) do
+    if Assigned(FProjectCards[I]) then
+    begin
+      FProjectCards[I].Parent := nil;
+      FreeAndNil(FProjectCards[I]);
+    end;
+  SetLength(FProjectCards, 0);
+end;
+
+procedure TMainForm.ProjectCardClick(Sender: TObject);
+var
+  FolderPath: string;
+begin
+  // Sender kann TPanel, TLabel oder TImage sein – Hint enthält immer den Pfad
+  if not (Sender is TControl) then
+    Exit;
+  FolderPath := TControl(Sender).Hint;
+  if FolderPath = '' then
+    Exit;
+  try
+    LoadProjectFromFolder(FolderPath);
+  except
+    on E: Exception do
+      MessageDlg('Projekt konnte nicht geöffnet werden:' + LineEnding + E.Message,
+        mtError, [mbOK], 0);
+  end;
+end;
+
+procedure TMainForm.RebuildProjectCards;
+var
+  I: Integer;
+  Summary: TProjectSummary;
+  Card: TPanel;
+  CoverImg: TImage;
+  TitleLbl, SubLbl, InfoLbl: TLabel;
+  Col, Row, CardW, CardH, ColSpacing, RowSpacing, StartTop, StartLeft: Integer;
+  CoverPath: string;
+begin
+  ClearProjectCards;
+  if not Assigned(FSettings) or (FSettings.RecentProjectCount = 0) then
+    Exit;
+
+  CardW := 280;
+  CardH := 90;
+  ColSpacing := 16;
+  RowSpacing := 12;
+  StartLeft := 24;
+  StartTop := 110;
+
+  SetLength(FProjectCards, FSettings.RecentProjectCount);
+  for I := 0 to FSettings.RecentProjectCount - 1 do
+  begin
+    Summary := TProjectStore.LoadSummaryFromFolder(FSettings.RecentProjects[I]);
+    if not Summary.Valid then
+      Summary.Title := ExtractFileName(FSettings.RecentProjects[I]);
+
+    Col := I mod 3;
+    Row := I div 3;
+
+    Card := TPanel.Create(Self);
+    Card.Parent := ProjectPanel;
+    Card.Left := StartLeft + Col * (CardW + ColSpacing);
+    Card.Top := StartTop + Row * (CardH + RowSpacing);
+    Card.Width := CardW;
+    Card.Height := CardH;
+    Card.BevelOuter := bvRaised;
+    Card.BevelInner := bvNone;
+    Card.Color := $00FAF8F5;
+    Card.Cursor := crHandPoint;
+    Card.Hint := FSettings.RecentProjects[I];
+    Card.OnClick := @ProjectCardClick;
+
+    // Mini-Cover
+    CoverImg := TImage.Create(Card);
+    CoverImg.Parent := Card;
+    CoverImg.Left := 6;
+    CoverImg.Top := 6;
+    CoverImg.Width := 54;
+    CoverImg.Height := 78;
+    CoverImg.Proportional := True;
+    CoverImg.Stretch := True;
+    CoverImg.Center := True;
+    CoverImg.Cursor := crHandPoint;
+    CoverImg.OnClick := @ProjectCardClick;
+    // Hint mit Pfad damit der Click-Handler greift
+    CoverImg.Hint := FSettings.RecentProjects[I];
+
+    if Summary.CoverImagePath <> '' then
+    begin
+      CoverPath := TProjectStore.AbsolutePath(Summary.FolderPath, Summary.CoverImagePath);
+      if FileExists(CoverPath) then
+        try
+          CoverImg.Picture.LoadFromFile(CoverPath);
+        except
+          // Bild laden fehlgeschlagen – bleibt leer
+        end;
+    end;
+    if (not Assigned(CoverImg.Picture.Graphic)) or CoverImg.Picture.Graphic.Empty then
+    begin
+      // TImage zeigt keine Hintergrundfarbe — kleines Panel als Platzhalter dahinter
+      with TPanel.Create(Card) do
+      begin
+        Parent := Card;
+        Left := CoverImg.Left;
+        Top := CoverImg.Top;
+        Width := CoverImg.Width;
+        Height := CoverImg.Height;
+        Color := $00D4D0CC;
+        BevelOuter := bvNone;
+        Caption := '';
+        Cursor := crHandPoint;
+        Hint := FSettings.RecentProjects[I];
+        OnClick := @ProjectCardClick;
+      end;
+    end;
+
+    // Titel
+    TitleLbl := TLabel.Create(Card);
+    TitleLbl.Parent := Card;
+    TitleLbl.Left := 68;
+    TitleLbl.Top := 8;
+    TitleLbl.Width := 204;
+    TitleLbl.AutoSize := False;
+    TitleLbl.WordWrap := True;
+    TitleLbl.Caption := Summary.Title;
+    TitleLbl.Font.Style := [fsBold];
+    TitleLbl.Font.Size := 9;
+    TitleLbl.Cursor := crHandPoint;
+    TitleLbl.OnClick := @ProjectCardClick;
+    TitleLbl.Hint := FSettings.RecentProjects[I];
+
+    // Untertitel
+    SubLbl := TLabel.Create(Card);
+    SubLbl.Parent := Card;
+    SubLbl.Left := 68;
+    SubLbl.Top := 34;
+    SubLbl.Width := 204;
+    SubLbl.Height := 28;
+    SubLbl.AutoSize := False;
+    SubLbl.WordWrap := True;
+    SubLbl.Caption := Summary.Subtitle;
+    SubLbl.Font.Color := $00666666;
+    SubLbl.Font.Size := 8;
+    SubLbl.Cursor := crHandPoint;
+    SubLbl.OnClick := @ProjectCardClick;
+    SubLbl.Hint := FSettings.RecentProjects[I];
+
+    // Kapitelzahl
+    InfoLbl := TLabel.Create(Card);
+    InfoLbl.Parent := Card;
+    InfoLbl.Left := 68;
+    InfoLbl.Top := 68;
+    InfoLbl.Caption := IntToStr(Summary.ChapterCount) + ' Kapitel';
+    InfoLbl.Font.Color := $00999999;
+    InfoLbl.Font.Size := 8;
+    InfoLbl.Cursor := crHandPoint;
+    InfoLbl.OnClick := @ProjectCardClick;
+    InfoLbl.Hint := FSettings.RecentProjects[I];
+
+    FProjectCards[I] := Card;
+  end;
 end;
 
 procedure TMainForm.BackToOverviewClick(Sender: TObject);

@@ -11,6 +11,7 @@ type
   TProjectStore = class
   public
     class function LoadFromFolder(const AFolder: string): TStructuraProject;
+    class function LoadSummaryFromFolder(const AFolder: string): TProjectSummary;
     class procedure SaveToFolder(AProject: TStructuraProject);
     class procedure EnsureProjectFolders(const AFolder: string);
     class procedure CreateBlankProject(AProject: TStructuraProject; const AFolder,
@@ -133,6 +134,58 @@ begin
       Result.Free;
       raise Exception.Create('Projektdatei konnte nicht gelesen werden: ' + E.Message);
     end;
+  end;
+end;
+
+class function TProjectStore.LoadSummaryFromFolder(const AFolder: string): TProjectSummary;
+var
+  FileName, Content: string;
+  Root: TJSONObject;
+  Items: TJSONData;
+  ItemsArr: TJSONArray;
+  I: Integer;
+  ItemType: string;
+begin
+  Result.FolderPath := ExcludeTrailingPathDelimiter(AFolder);
+  Result.Title := '';
+  Result.Subtitle := '';
+  Result.Author := '';
+  Result.CoverImagePath := '';
+  Result.ChapterCount := 0;
+  Result.Valid := False;
+
+  FileName := ProjectFileName(AFolder);
+  if not FileExists(FileName) then
+    Exit;
+
+  try
+    Content := ReadFileToString(FileName);
+    Root := TJSONObject(GetJSON(Content));
+    try
+      Result.Title := Root.Get('title', '');
+      Result.Subtitle := Root.Get('subtitle', '');
+      Result.Author := Root.Get('author', '');
+      Result.CoverImagePath := Root.Get('coverImagePath', '');
+      Items := Root.Find('items');
+      if Items is TJSONArray then
+      begin
+        ItemsArr := TJSONArray(Items);
+        for I := 0 to ItemsArr.Count - 1 do
+          if ItemsArr.Items[I] is TJSONObject then
+          begin
+            ItemType := TJSONObject(ItemsArr.Items[I]).Get('type', '');
+            if SameText(ItemType, 'chapter') then
+              Inc(Result.ChapterCount);
+          end;
+      end;
+      if Result.Title = '' then
+        Result.Title := ExtractFileName(Result.FolderPath);
+      Result.Valid := True;
+    finally
+      Root.Free;
+    end;
+  except
+    // Ungültige JSON — Valid bleibt False
   end;
 end;
 
