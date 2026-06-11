@@ -26,10 +26,12 @@ type
     FExportPopupMenu: TPopupMenu;
     FBackLabel: TLabel;
     FProjectCards: array of TPanel;
+    FDeferredProjectFolder: string;
     procedure ConfigureUi;
     procedure RebuildProjectCards;
     procedure ClearProjectCards;
     procedure ProjectCardClick(Sender: TObject);
+    procedure LoadProjectDeferred(Data: PtrInt);
     procedure LoadButtonGlyph(AButton: TBitBtn; const AFileName: string);
     procedure ApplyOfficeOverrides;
     procedure SyncDetectedTargetsToSettings;
@@ -98,6 +100,7 @@ type
     StatusBar: TStatusBar;
     NewButton: TBitBtn;
     OpenButton: TBitBtn;
+    ImportButton: TBitBtn;
     SettingsButton: TBitBtn;
     AddButton: TBitBtn;
     EditButton: TBitBtn;
@@ -159,6 +162,7 @@ type
     procedure ReviewMenuClick(Sender: TObject);
     procedure CopyMenuClick(Sender: TObject);
     procedure ExportMenuClick(Sender: TObject);
+    procedure ImportProjectClick(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
   public
     destructor Destroy; override;
@@ -174,7 +178,8 @@ implementation
 uses
   LCLIntf, LCLType, FileUtil, Process, Clipbrd, StrUtils, Math,
   ProjectStore, ProjectDialogUnit, ElementDialogUnit, DocumentWorkflow,
-  DocxPreview, SettingsStore, SettingsDialogUnit, FirstRunWizardUnit;
+  DocxPreview, SettingsStore, SettingsDialogUnit, FirstRunWizardUnit,
+  ImportProjectDialogUnit;
 
 function NormalizeStoredPathForCompare(const APath: string): string;
 begin
@@ -1380,22 +1385,31 @@ begin
 end;
 
 procedure TMainForm.ProjectCardClick(Sender: TObject);
-var
-  FolderPath: string;
 begin
-  // Sender kann TPanel, TLabel oder TImage sein – Hint enthält immer den Pfad
+  // Sender kann TPanel, TLabel oder TImage sein – Hint enthält immer den Pfad.
+  // WICHTIG: Projektp-Laden wird via QueueAsyncCall verzögert, damit LCL den
+  // Click-Event vollständig abschließen kann, bevor ClearProjectCards die
+  // Sender-Kachel freigibt (sonst: Access Violation $FFFFFFFFFFFFFFFF).
   if not (Sender is TControl) then
     Exit;
-  FolderPath := TControl(Sender).Hint;
-  if FolderPath = '' then
+  FDeferredProjectFolder := TControl(Sender).Hint;
+  if FDeferredProjectFolder = '' then
+    Exit;
+  Application.QueueAsyncCall(@LoadProjectDeferred, 0);
+end;
+
+procedure TMainForm.LoadProjectDeferred(Data: PtrInt);
+begin
+  if FDeferredProjectFolder = '' then
     Exit;
   try
-    LoadProjectFromFolder(FolderPath);
+    LoadProjectFromFolder(FDeferredProjectFolder);
   except
     on E: Exception do
       MessageDlg('Projekt konnte nicht geöffnet werden:' + LineEnding + E.Message,
         mtError, [mbOK], 0);
   end;
+  FDeferredProjectFolder := '';
 end;
 
 procedure TMainForm.RebuildProjectCards;
@@ -1610,6 +1624,91 @@ begin
     CoverImage.Picture.Assign(Bmp);
   finally
     Bmp.Free;
+  end;
+end;
+
+procedure TMainForm.ImportProjectClick(Sender: TObject);
+var
+  Res: TImportResult;
+  DefaultDir: string;
+  Project: TStructuraProject;
+  I: Integer;
+  ChapterTitle, RelFile: string;
+  Item: TStructuraItem;
+begin
+  DefaultDir := '';
+  if Assigned(FSettings) then
+    DefaultDir := FSettings.DefaultProjectFolder;
+
+  Res := ShowImportDialog(Self, DefaultDir);
+  if not Res.Confirmed then
+  begin
+    FreeAndNil(Res.SelectedFiles);
+    Exit;
+  end;
+
+  try
+    // Warnen falls structura.json schon existiert
+    if FileExists(TProjectStore.ProjectFileName(Res.FolderPath)) then
+    begin
+      if MessageDlg(
+        'Im gewählten Ordner existiert bereits ein Structura-Projekt.' +
+        LineEnding + 'Trotzdem importieren und überschreiben?',
+        mtConfirmation, [mbYes, mbNo], 0) <> mrYes then
+        Exit;
+    end;
+
+    TProjectStore.EnsureProjectFolders(Res.FolderPath);
+
+    Project := TStructuraProject.Create;
+    try
+      Project.FolderPath := Res.FolderPath;
+      Project.Title      := Res.Title;
+      Project.Author     := Res.Author;
+
+      // Cover suchen
+      if FileExists(IncludeTrailingPathDelimiter(Res.FolderPath) + 'cover.png') then
+        Project.CoverImagePath := 'cover.png'
+      else if FileExists(IncludeTrailingPathDelimiter(Res.FolderPath) + 'cover.jpg') then
+        Project.CoverImagePath := 'cover.jpg'
+      else if FileExists(IncludeTrailingPathDelimiter(Res.FolderPath) + 'cover.jpeg') then
+        Project.CoverImagePath := 'cover.jpeg';
+
+      // Kapitel aus gewählten Dateien anlegen
+      for I := 0 to Res.SelectedFiles.Count - 1 do
+      begin
+        RelFile := Res.SelectedFiles[I];
+        // Kapitelname: Dateiname ohne Pfad und ohne Erweiterung, bereinigt
+        ChapterTitle := ChangeFileExt(ExtractFileName(RelFile), '');
+        // Führende Kapitelkennung entfernen (K00_, 01_, …)
+        ChapterTitle := TrimLeft(ChapterTitle);
+        Item := Project.AddChapter(ChapterTitle, RelFile);
+        Item.Status := 'Rohfassung';
+      end;
+
+      // Notiz-Platzhalter anlegen
+      SaveTextFileSafe(
+        TProjectStore.AbsolutePath(Res.FolderPath,
+          RelativeProjectPath(['notes', 'project.md'])),
+        '# Projektnotizen' + LineEnding + LineEnding);
+
+      TProjectStore.SaveToFolder(Project);
+      SetProject(Project);
+
+      if Assigned(FSettings) then
+      begin
+        FSettings.AddRecentProject(Res.FolderPath);
+        TSettingsStore.Save(FSettings);
+      end;
+
+      UpdateStatus('Projekt importiert: ' + Res.Title +
+        ' (' + IntToStr(Res.SelectedFiles.Count) + ' Kapitel)');
+    except
+      Project.Free;
+      raise;
+    end;
+  finally
+    FreeAndNil(Res.SelectedFiles);
   end;
 end;
 
