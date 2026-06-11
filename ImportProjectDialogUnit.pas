@@ -13,6 +13,13 @@ uses
   Buttons, FileCtrl, CheckLst;
 
 type
+  // Eine Importzeile ist entweder ein Kapitel (Datei) oder ein Teil (Trenner).
+  TImportEntryKind = (iekChapter, iekDivider);
+
+  TImportEntry = record
+    Kind:  TImportEntryKind;
+    Data:  string;   // Kapitel: relativer Pfad · Trenner: Titel
+  end;
 
   { TImportResult enthält alles was der Aufrufer nach OK braucht }
   TImportResult = record
@@ -21,6 +28,7 @@ type
     Title:        string;
     Author:       string;
     SelectedFiles: TStringList;  // relative Pfade; Aufrufer muss freigeben
+    Entries:      array of TImportEntry; // geordnete Liste Kapitel/Trenner
   end;
 
   TImportProjectDialog = class(TForm)
@@ -30,14 +38,21 @@ type
     FAuthorEdit:    TEdit;
     FFileList:      TCheckListBox;
     FStatusLabel:   TLabel;
+    FRowKind:       array of TImportEntryKind;
+    FRowData:       array of string;
 
     procedure BrowseClick(Sender: TObject);
     procedure FolderEditExit(Sender: TObject);
     procedure SelectAllClick(Sender: TObject);
     procedure SelectNoneClick(Sender: TObject);
+    procedure MoveUpClick(Sender: TObject);
+    procedure MoveDownClick(Sender: TObject);
     procedure OKClick(Sender: TObject);
 
     procedure ScanFolder;
+    procedure AddRow(AKind: TImportEntryKind; const AData, ADisplay: string;
+      AChecked: Boolean);
+    procedure SwapRows(A, B: Integer);
     function  CleanChapterTitle(const AFileName: string): string;
   public
     constructor CreateDialog(AOwner: TComponent; const ADefaultFolder: string = '');
@@ -92,68 +107,144 @@ end;
 
 { ─── Ordner scannen ──────────────────────────────────────────────────────── }
 
+// Rekursiv DOCX sammeln (relative Pfade), Structura-eigene Ordner auslassen.
+procedure CollectDocxFiles(const ARoot, ARelDir: string; AInto: TStringList);
+var
+  SR: TSearchRec;
+  AbsDir, Name, RelChild: string;
+begin
+  AbsDir := IncludeTrailingPathDelimiter(ARoot +
+    StringReplace(ARelDir, '/', PathDelim, [rfReplaceAll]));
+  if FindFirst(AbsDir + '*', faAnyFile, SR) = 0 then
+  begin
+    try
+      repeat
+        Name := SR.Name;
+        if (Name = '.') or (Name = '..') then
+          Continue;
+        if ARelDir = '' then
+          RelChild := Name
+        else
+          RelChild := ARelDir + PathDelim + Name;
+        if (SR.Attr and faDirectory) <> 0 then
+        begin
+          // Eigene Verwaltungsordner nicht als Teile importieren
+          if SameText(Name, 'backup') or SameText(Name, 'export') or
+             SameText(Name, 'notes') then
+            Continue;
+          CollectDocxFiles(ARoot, RelChild, AInto);
+        end
+        else if SameText(ExtractFileExt(Name), '.docx') and
+                (Copy(Name, 1, 2) <> '~$') then
+          AInto.Add(RelChild);
+      until FindNext(SR) <> 0;
+    finally
+      FindClose(SR);
+    end;
+  end;
+end;
+
+procedure TImportProjectDialog.AddRow(AKind: TImportEntryKind;
+  const AData, ADisplay: string; AChecked: Boolean);
+var
+  N: Integer;
+begin
+  N := FFileList.Items.Add(ADisplay);
+  FFileList.Checked[N] := AChecked;
+  SetLength(FRowKind, N + 1);
+  SetLength(FRowData, N + 1);
+  FRowKind[N] := AKind;
+  FRowData[N] := AData;
+end;
+
+procedure TImportProjectDialog.SwapRows(A, B: Integer);
+var
+  TmpKind: TImportEntryKind;
+  TmpData, TmpItem: string;
+  TmpChecked: Boolean;
+begin
+  if (A < 0) or (B < 0) or (A >= FFileList.Count) or (B >= FFileList.Count) then
+    Exit;
+  TmpKind := FRowKind[A]; FRowKind[A] := FRowKind[B]; FRowKind[B] := TmpKind;
+  TmpData := FRowData[A]; FRowData[A] := FRowData[B]; FRowData[B] := TmpData;
+  TmpItem := FFileList.Items[A];
+  FFileList.Items[A] := FFileList.Items[B];
+  FFileList.Items[B] := TmpItem;
+  TmpChecked := FFileList.Checked[A];
+  FFileList.Checked[A] := FFileList.Checked[B];
+  FFileList.Checked[B] := TmpChecked;
+end;
+
+// Letztes Pfadsegment eines relativen Verzeichnisses (für Teil-Titel)
+function LastFolderSegment(const ARelDir: string): string;
+var
+  S: string;
+  P: Integer;
+begin
+  S := ExcludeTrailingPathDelimiter(StringReplace(ARelDir, '/', PathDelim, [rfReplaceAll]));
+  P := Length(S);
+  while (P > 0) and (S[P] <> PathDelim) do
+    Dec(P);
+  Result := Copy(S, P + 1, MaxInt);
+  if Result = '' then
+    Result := ARelDir;
+end;
+
 procedure TImportProjectDialog.ScanFolder;
 var
-  Dir: string;
-  SR: TSearchRec;
+  Dir, Root, RelPath, RelDir, CurGroup, Display: string;
   Files: TStringList;
-  I: Integer;
+  I, ChapterCount: Integer;
+  IsMainGroup: Boolean;
 begin
   FFileList.Items.Clear;
+  SetLength(FRowKind, 0);
+  SetLength(FRowData, 0);
   Dir := Trim(FFolderEdit.Text);
   if (Dir = '') or not DirectoryExists(Dir) then
   begin
     FStatusLabel.Caption := 'Ordner nicht gefunden.';
     Exit;
   end;
+  Root := IncludeTrailingPathDelimiter(Dir);
 
   Files := TStringList.Create;
   try
-    // Direkt im Projektordner
-    if FindFirst(IncludeTrailingPathDelimiter(Dir) + '*.docx', faAnyFile, SR) = 0 then
-    begin
-      try
-        repeat
-          if (SR.Attr and faDirectory) = 0 then
-            Files.Add(SR.Name);
-        until FindNext(SR) <> 0;
-      finally
-        FindClose(SR);
-      end;
-    end;
-
-    // Auch im chapters/-Unterordner suchen
-    if DirectoryExists(IncludeTrailingPathDelimiter(Dir) + 'chapters') then
-    begin
-      if FindFirst(IncludeTrailingPathDelimiter(Dir) + 'chapters' + PathDelim + '*.docx',
-                   faAnyFile, SR) = 0 then
-      begin
-        try
-          repeat
-            if (SR.Attr and faDirectory) = 0 then
-              Files.Add('chapters' + PathDelim + SR.Name);
-          until FindNext(SR) <> 0;
-        finally
-          FindClose(SR);
-        end;
-      end;
-    end;
-
+    // Rekursiv alle DOCX einsammeln, Structura-eigene Ordner überspringen
+    CollectDocxFiles(Root, '', Files);
+    // Nach vollständigem relativem Pfad sortieren → Gruppen bleiben zusammen,
+    // Nummerierung innerhalb der Gruppe wird respektiert
     Files.Sort;
 
+    CurGroup := #1; // unmöglicher Startwert
+    ChapterCount := 0;
     for I := 0 to Files.Count - 1 do
     begin
-      FFileList.Items.Add(CleanChapterTitle(Files[I]) +
-        '   [' + Files[I] + ']');
-      FFileList.Checked[I] := True;
+      RelPath := Files[I];
+      RelDir := ExtractFileDir(RelPath);
+      // Wurzel und chapters/ gelten als Hauptgruppe ohne Teil-Trenner
+      IsMainGroup := (RelDir = '') or SameText(RelDir, 'chapters');
+
+      if not IsMainGroup and (RelDir <> CurGroup) then
+        AddRow(iekDivider, LastFolderSegment(RelDir),
+          '──  ' + LastFolderSegment(RelDir) + '  ──', True);
+      if IsMainGroup then
+        CurGroup := #1
+      else
+        CurGroup := RelDir;
+
+      AddRow(iekChapter, RelPath,
+        CleanChapterTitle(RelPath) + '   [' + RelPath + ']', True);
+      Inc(ChapterCount);
     end;
 
-    if Files.Count = 0 then
+    if ChapterCount = 0 then
       FStatusLabel.Caption := 'Keine DOCX-Dateien gefunden.'
     else
-      FStatusLabel.Caption := IntToStr(Files.Count) + ' DOCX-Datei(en) gefunden.';
+      FStatusLabel.Caption := Format(
+        '%d DOCX-Datei(en) gefunden. Reihenfolge bei Bedarf mit ▲▼ anpassen.',
+        [ChapterCount]);
 
-    // Titelfeld aus Ordnernamen vorbelegen falls noch leer
     if Trim(FTitleEdit.Text) = '' then
       FTitleEdit.Text := ExtractFileName(ExcludeTrailingPathDelimiter(Dir));
   finally
@@ -194,6 +285,26 @@ begin
     FFileList.Checked[I] := False;
 end;
 
+procedure TImportProjectDialog.MoveUpClick(Sender: TObject);
+var I: Integer;
+begin
+  I := FFileList.ItemIndex;
+  if I <= 0 then
+    Exit;
+  SwapRows(I, I - 1);
+  FFileList.ItemIndex := I - 1;
+end;
+
+procedure TImportProjectDialog.MoveDownClick(Sender: TObject);
+var I: Integer;
+begin
+  I := FFileList.ItemIndex;
+  if (I < 0) or (I >= FFileList.Count - 1) then
+    Exit;
+  SwapRows(I, I + 1);
+  FFileList.ItemIndex := I + 1;
+end;
+
 procedure TImportProjectDialog.OKClick(Sender: TObject);
 begin
   if Trim(FFolderEdit.Text) = '' then
@@ -217,7 +328,7 @@ var
   Y: Integer;
   Lbl: TLabel;
   BrowseBtn: TButton;
-  AllBtn, NoneBtn: TButton;
+  AllBtn, NoneBtn, UpBtn, DownBtn: TButton;
   OkBtn, CancelBtn: TButton;
   Sep: TBevel;
   NavPanel: TPanel;
@@ -314,6 +425,24 @@ begin
   NoneBtn.Width := 70; NoneBtn.Height := 26;
   NoneBtn.OnClick := @SelectNoneClick;
 
+  UpBtn := TButton.Create(Self);
+  UpBtn.Parent := Self;
+  UpBtn.Caption := '▲';
+  UpBtn.Hint := 'Markierte Zeile nach oben';
+  UpBtn.ShowHint := True;
+  UpBtn.Left := DLG_W - MARGIN - 76; UpBtn.Top := Y;
+  UpBtn.Width := 34; UpBtn.Height := 26;
+  UpBtn.OnClick := @MoveUpClick;
+
+  DownBtn := TButton.Create(Self);
+  DownBtn.Parent := Self;
+  DownBtn.Caption := '▼';
+  DownBtn.Hint := 'Markierte Zeile nach unten';
+  DownBtn.ShowHint := True;
+  DownBtn.Left := DLG_W - MARGIN - 38; DownBtn.Top := Y;
+  DownBtn.Width := 34; DownBtn.Height := 26;
+  DownBtn.OnClick := @MoveDownClick;
+
   // ─── Nav-Bar unten ───
   NavPanel := TPanel.Create(Self);
   NavPanel.Parent := Self;
@@ -350,12 +479,11 @@ end;
 
 function TImportProjectDialog.Execute: TImportResult;
 var
-  I: Integer;
-  RawEntry, FilePart: string;
-  BracketPos: Integer;
+  I, N: Integer;
 begin
   Result.Confirmed    := False;
   Result.SelectedFiles := TStringList.Create;
+  SetLength(Result.Entries, 0);
 
   if ShowModal <> mrOK then
     Exit;
@@ -369,18 +497,12 @@ begin
   begin
     if not FFileList.Checked[I] then
       Continue;
-    // Eintrag hat Format "Kapitelname   [relativerPfad]"
-    RawEntry := FFileList.Items[I];
-    BracketPos := LastDelimiter('[', RawEntry);
-    if BracketPos > 0 then
-    begin
-      FilePart := Copy(RawEntry, BracketPos + 1, MaxInt);
-      FilePart := StringReplace(FilePart, ']', '', [rfReplaceAll]);
-      FilePart := Trim(FilePart);
-    end
-    else
-      FilePart := RawEntry;
-    Result.SelectedFiles.Add(FilePart);
+    N := Length(Result.Entries);
+    SetLength(Result.Entries, N + 1);
+    Result.Entries[N].Kind := FRowKind[I];
+    Result.Entries[N].Data := FRowData[I];
+    if FRowKind[I] = iekChapter then
+      Result.SelectedFiles.Add(FRowData[I]);
   end;
 end;
 

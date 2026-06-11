@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [Unreleased]
+
+### Changed
+
+- Import from an existing folder is now structure-aware: it scans subfolders recursively, turns each subfolder into a part divider (e.g. `Teil 1/` → "Teil 1"), skips Structura's own `backup`/`export`/`notes` folders and Word lock files (`~$…`), and lets you reorder entries with ▲▼ before importing. `.docx` files anywhere in the tree are found, not just the root and `chapters/`
+
+---
+
 ## [0.5.0] — 2026-06-11
 
 ### Added

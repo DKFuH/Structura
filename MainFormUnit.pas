@@ -2835,16 +2835,21 @@ begin
       else if FileExists(IncludeTrailingPathDelimiter(Res.FolderPath) + 'cover.jpeg') then
         Project.CoverImagePath := 'cover.jpeg';
 
-      // Kapitel aus gewählten Dateien anlegen
-      for I := 0 to Res.SelectedFiles.Count - 1 do
+      // Kapitel und Teile (Trenner) in der gewählten Reihenfolge anlegen
+      for I := 0 to High(Res.Entries) do
       begin
-        RelFile := Res.SelectedFiles[I];
-        // Kapitelname: Dateiname ohne Pfad und ohne Erweiterung, bereinigt
-        ChapterTitle := ChangeFileExt(ExtractFileName(RelFile), '');
-        // Führende Kapitelkennung entfernen (K00_, 01_, …)
-        ChapterTitle := TrimLeft(ChapterTitle);
-        Item := Project.AddChapter(ChapterTitle, RelFile);
-        Item.Status := 'Rohfassung';
+        if Res.Entries[I].Kind = iekDivider then
+        begin
+          Project.AddDivider(Res.Entries[I].Data);
+        end
+        else
+        begin
+          RelFile := Res.Entries[I].Data;
+          // Kapitelname: Dateiname ohne Pfad und ohne Erweiterung, bereinigt
+          ChapterTitle := TrimLeft(ChangeFileExt(ExtractFileName(RelFile), ''));
+          Item := Project.AddChapter(ChapterTitle, RelFile);
+          Item.Status := 'Rohfassung';
+        end;
       end;
 
       // Notiz-Platzhalter anlegen
