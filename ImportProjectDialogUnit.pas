@@ -108,11 +108,18 @@ end;
 { ─── Ordner scannen ──────────────────────────────────────────────────────── }
 
 // Rekursiv DOCX sammeln (relative Pfade), Structura-eigene Ordner auslassen.
-procedure CollectDocxFiles(const ARoot, ARelDir: string; AInto: TStringList);
+// Begrenzte Tiefe (Schutz vor Junction-Schleifen), überspringt bestehende
+// Structura-Projekte (Ordner mit structura.json) und Symlink-Ordner.
+procedure CollectDocxFiles(const ARoot, ARelDir: string; AInto: TStringList;
+  ADepth: Integer = 0);
+const
+  MaxDepth = 6;
 var
   SR: TSearchRec;
-  AbsDir, Name, RelChild: string;
+  AbsDir, Name, RelChild, ChildAbs: string;
 begin
+  if ADepth > MaxDepth then
+    Exit;
   AbsDir := IncludeTrailingPathDelimiter(ARoot +
     StringReplace(ARelDir, '/', PathDelim, [rfReplaceAll]));
   if FindFirst(AbsDir + '*', faAnyFile, SR) = 0 then
@@ -132,7 +139,14 @@ begin
           if SameText(Name, 'backup') or SameText(Name, 'export') or
              SameText(Name, 'notes') then
             Continue;
-          CollectDocxFiles(ARoot, RelChild, AInto);
+          // Symlinks/Junctions nicht verfolgen (Endlosschleifen vermeiden)
+          if (SR.Attr and faSymLink) <> 0 then
+            Continue;
+          // Bestehende Structura-Projekte nicht mit-importieren
+          ChildAbs := IncludeTrailingPathDelimiter(AbsDir + Name);
+          if FileExists(ChildAbs + 'structura.json') then
+            Continue;
+          CollectDocxFiles(ARoot, RelChild, AInto, ADepth + 1);
         end
         else if SameText(ExtractFileExt(Name), '.docx') and
                 (Copy(Name, 1, 2) <> '~$') then
@@ -470,9 +484,11 @@ begin
   OkBtn.Default := True;
   OkBtn.OnClick := @OKClick;
 
-  // Initiales Scannen wenn Ordner bereits vorgegeben
-  if ADefaultFolder <> '' then
-    ScanFolder;
+  // Bewusst kein Auto-Scan beim Öffnen: der vorgegebene Ordner ist die
+  // Projekt-Wurzel, kein Manuskriptordner. Der Nutzer wählt erst gezielt
+  // den zu importierenden Ordner (Durchsuchen), dann wird gescannt.
+  FStatusLabel.Caption :=
+    'Ordner mit den DOCX-Kapiteln über „...“ auswählen.';
 end;
 
 { ─── Ergebnis auslesen ───────────────────────────────────────────────────── }

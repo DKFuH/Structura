@@ -13,6 +13,10 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 - Import from an existing folder is now structure-aware: it scans subfolders recursively, turns each subfolder into a part divider (e.g. `Teil 1/` → "Teil 1"), skips Structura's own `backup`/`export`/`notes` folders and Word lock files (`~$…`), and lets you reorder entries with ▲▼ before importing. `.docx` files anywhere in the tree are found, not just the root and `chapters/`
 
+### Fixed
+
+- Import no longer freezes when opened: the recursive scan is bounded (max depth, skips symlinks/junctions and existing Structura projects with a `structura.json`), and the dialog no longer auto-scans the project root folder on open — scanning happens only after you pick a manuscript folder
+
 ---
 
 ## [0.5.0] — 2026-06-11
