@@ -165,3 +165,5 @@ See `.gitignore` for the expected ignore rules.
 Structura is licensed under the MIT License.
 
 See [LICENSE](LICENSE) for the full license text.
+
+Button icons from [Streamline Ultimate Color](https://www.streamlinehq.com/) via [Iconify](https://iconify.design/), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).

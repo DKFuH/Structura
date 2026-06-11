@@ -108,3 +108,5 @@ Die Textvorschau funktioniert ohne installiertes Office-Programm. PDF-Workflows 
 Structura steht unter der MIT-Lizenz.
 
 Vollständiger Lizenztext: [LICENSE](LICENSE)
+
+Button-Icons aus [Streamline Ultimate Color](https://www.streamlinehq.com/) via [Iconify](https://iconify.design/), lizenziert unter [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
