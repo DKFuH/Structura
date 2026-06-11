@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls, StdCtrls,
-  Buttons, ComCtrls, Menus, StructuraTypes, OfficeDetection;
+  Buttons, ComCtrls, Menus, StructuraTypes, OfficeDetection, AppSettings;
 
 type
   TMainForm = class(TForm)
@@ -16,10 +16,25 @@ type
     FSelectedIndex: Integer;
     FUpdatingUi: Boolean;
     FOfficeTargets: TOfficeTargets;
+    FSettings: TAppSettings;
     FLastProjectFolder: string;
     FCurrentPreviewText: string;
+    FWorkflowButtons: array of TMenuItem;
+    FOpenPopupMenu: TPopupMenu;
+    FReviewPopupMenu: TPopupMenu;
+    FCopyPopupMenu: TPopupMenu;
+    FExportPopupMenu: TPopupMenu;
+    FBackLabel: TLabel;
     procedure ConfigureUi;
     procedure LoadButtonGlyph(AButton: TBitBtn; const AFileName: string);
+    procedure ApplyOfficeOverrides;
+    procedure SyncDetectedTargetsToSettings;
+    procedure RefreshWorkflowButtons;
+    procedure BuildPopupMenus;
+    procedure RebuildOpenPopupMenu;
+    procedure RebuildCopyPopupMenu;
+    procedure RebuildExportPopupMenu;
+    procedure ShowPopupMenuBelow(AControl: TControl; AMenu: TPopupMenu);
     procedure SetProject(AProject: TStructuraProject);
     procedure LoadProjectFromFolder(const AFolder: string);
     procedure SaveProject;
@@ -55,9 +70,19 @@ type
     function FileModifiedText(const AFileName: string): string;
     function ProjectStatusSummary: string;
     function OfficeAvailabilitySummary: string;
+    function BuildWorkflowCopyText(AConfig: TWorkflowButtonConfig): string;
+    function BuildMarkdownCopyText: string;
     procedure OpenCurrentChapterWithExecutable(const AExecutable: string);
     procedure ShowInFileManager(const AFileName: string);
     procedure UpdateStatus(const AText: string);
+    procedure WorkflowButtonClick(Sender: TObject);
+    procedure CopyTitleAndTextClick(Sender: TObject);
+    procedure CopyPromptAndTextClick(Sender: TObject);
+    procedure CopyMarkdownClick(Sender: TObject);
+    procedure ExportFolderClick(Sender: TObject);
+    procedure OpenProjectFolderClick(Sender: TObject);
+    procedure BackToOverviewClick(Sender: TObject);
+    procedure DrawCoverPlaceholder;
   published
     LeftPanel: TPanel;
     HeaderPanel: TPanel;
@@ -69,6 +94,7 @@ type
     StatusBar: TStatusBar;
     NewButton: TBitBtn;
     OpenButton: TBitBtn;
+    SettingsButton: TBitBtn;
     AddButton: TBitBtn;
     EditButton: TBitBtn;
     DeleteButton: TBitBtn;
@@ -95,7 +121,6 @@ type
     LibreButton: TButton;
     TextMakerButton: TButton;
     CopyTextButton: TButton;
-    GrammarlyButton: TButton;
     ExportButton: TBitBtn;
     NotesLabel: TLabel;
     NotesMemo: TMemo;
@@ -113,7 +138,9 @@ type
       State: TDragState; var Accept: Boolean);
     procedure ItemListDragDrop(Sender, Source: TObject; X, Y: Integer);
     procedure ProjectNotesExit(Sender: TObject);
+    procedure ProjectNotesChanged(Sender: TObject);
     procedure NotesExit(Sender: TObject);
+    procedure NotesChanged(Sender: TObject);
     procedure StatusChanged(Sender: TObject);
     procedure OpenChapterClick(Sender: TObject);
     procedure OpenFolderClick(Sender: TObject);
@@ -122,8 +149,12 @@ type
     procedure LibreClick(Sender: TObject);
     procedure TextMakerClick(Sender: TObject);
     procedure CopyTextClick(Sender: TObject);
-    procedure GrammarlyClick(Sender: TObject);
+    procedure SettingsClick(Sender: TObject);
     procedure ExportClick(Sender: TObject);
+    procedure OpenMenuClick(Sender: TObject);
+    procedure ReviewMenuClick(Sender: TObject);
+    procedure CopyMenuClick(Sender: TObject);
+    procedure ExportMenuClick(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
   public
     destructor Destroy; override;
@@ -139,11 +170,37 @@ implementation
 uses
   LCLIntf, LCLType, FileUtil, Process, Clipbrd, StrUtils, Math,
   ProjectStore, ProjectDialogUnit, ElementDialogUnit, DocumentWorkflow,
-  DocxPreview;
+  DocxPreview, SettingsStore, SettingsDialogUnit;
 
 function NormalizeStoredPathForCompare(const APath: string): string;
 begin
   Result := StringReplace(APath, '\', '/', [rfReplaceAll]);
+end;
+
+function TryLaunchDetachedProcess(const AExecutable: string;
+  const AParameters: array of string; out ErrorText: string): Boolean;
+var
+  Proc: TProcess;
+  I: Integer;
+begin
+  Result := False;
+  ErrorText := '';
+  Proc := TProcess.Create(nil);
+  try
+    Proc.Executable := AExecutable;
+    for I := Low(AParameters) to High(AParameters) do
+      Proc.Parameters.Add(AParameters[I]);
+    Proc.Options := [];
+    try
+      Proc.Execute;
+      Result := True;
+    except
+      on E: Exception do
+        ErrorText := E.Message;
+    end;
+  finally
+    Proc.Free;
+  end;
 end;
 
 procedure TMainForm.ConfigureUi;
@@ -156,21 +213,242 @@ begin
   ChapterActionPanel.AutoWrap := True;
   ChapterActionPanel.FlowStyle := fsLeftRightTopBottom;
   StatusBar.SimplePanel := True;
+  WordButton.Visible := False;
+  LibreButton.Visible := False;
+  TextMakerButton.Visible := False;
+  OpenFolderButton.Visible := False;
+  PdfPreviewButton.Visible := False;
+  CopyTextButton.Visible := False;
+  OpenChapterButton.Caption := 'Öffnen mit ▼';
+  WordButton.Caption := 'Prüfen mit ▼';
+  LibreButton.Caption := 'Kopieren ▼';
+  ExportButton.Caption := 'Export ▼';
+  WordButton.Visible := True;
+  LibreButton.Visible := True;
+
+  FBackLabel := TLabel.Create(Self);
+  FBackLabel.Parent := ChapterPanel;
+  FBackLabel.Left := 24;
+  FBackLabel.Top := 2;
+  FBackLabel.Caption := '← Projektübersicht';
+  FBackLabel.Cursor := crHandPoint;
+  FBackLabel.Font.Color := $006B3D1E;
+  FBackLabel.OnClick := @BackToOverviewClick;
+end;
+
+procedure TMainForm.ApplyOfficeOverrides;
+begin
+  if not Assigned(FSettings) then
+    Exit;
+
+  if Trim(FSettings.WordPathOverride) <> '' then
+    FOfficeTargets.WordPath := FSettings.WordPathOverride;
+  if Trim(FSettings.LibreOfficePathOverride) <> '' then
+    FOfficeTargets.LibreOfficePath := FSettings.LibreOfficePathOverride;
+  if Trim(FSettings.TextMakerPathOverride) <> '' then
+    FOfficeTargets.TextMakerPath := FSettings.TextMakerPathOverride;
+end;
+
+procedure TMainForm.SyncDetectedTargetsToSettings;
+var
+  SettingsChanged: Boolean;
+begin
+  if not Assigned(FSettings) then
+    Exit;
+
+  SettingsChanged := False;
+  if (Trim(FSettings.WordPathOverride) = '') and (Trim(FOfficeTargets.WordPath) <> '') then
+  begin
+    FSettings.WordPathOverride := FOfficeTargets.WordPath;
+    SettingsChanged := True;
+  end;
+  if (Trim(FSettings.LibreOfficePathOverride) = '') and (Trim(FOfficeTargets.LibreOfficePath) <> '') then
+  begin
+    FSettings.LibreOfficePathOverride := FOfficeTargets.LibreOfficePath;
+    SettingsChanged := True;
+  end;
+  if (Trim(FSettings.TextMakerPathOverride) = '') and (Trim(FOfficeTargets.TextMakerPath) <> '') then
+  begin
+    FSettings.TextMakerPathOverride := FOfficeTargets.TextMakerPath;
+    SettingsChanged := True;
+  end;
+
+  if SettingsChanged then
+    TSettingsStore.Save(FSettings);
+end;
+
+procedure TMainForm.RefreshWorkflowButtons;
+var
+  I: Integer;
+  Item: TMenuItem;
+begin
+  if Assigned(FReviewPopupMenu) then
+    FReviewPopupMenu.Items.Clear;
+  SetLength(FWorkflowButtons, 0);
+
+  if not Assigned(FSettings) then
+    Exit;
+
+  SetLength(FWorkflowButtons, FSettings.WorkflowButtonCount);
+  for I := 0 to FSettings.WorkflowButtonCount - 1 do
+  begin
+    Item := TMenuItem.Create(Self);
+    Item.Caption := FSettings.WorkflowButtons[I].Name;
+    Item.Hint := FSettings.WorkflowButtons[I].Hint;
+    Item.Tag := I;
+    Item.OnClick := @WorkflowButtonClick;
+    FReviewPopupMenu.Items.Add(Item);
+    FWorkflowButtons[I] := Item;
+  end;
+end;
+
+procedure TMainForm.BuildPopupMenus;
+begin
+  FOpenPopupMenu := TPopupMenu.Create(Self);
+  FReviewPopupMenu := TPopupMenu.Create(Self);
+  FCopyPopupMenu := TPopupMenu.Create(Self);
+  FExportPopupMenu := TPopupMenu.Create(Self);
+  RebuildOpenPopupMenu;
+  RebuildCopyPopupMenu;
+  RebuildExportPopupMenu;
+end;
+
+procedure TMainForm.RebuildOpenPopupMenu;
+var
+  Item: TMenuItem;
+begin
+  FOpenPopupMenu.Items.Clear;
+
+  Item := TMenuItem.Create(FOpenPopupMenu);
+  Item.Caption := 'Standardprogramm';
+  Item.OnClick := @OpenChapterClick;
+  FOpenPopupMenu.Items.Add(Item);
+
+  if Trim(FOfficeTargets.WordPath) <> '' then
+  begin
+    Item := TMenuItem.Create(FOpenPopupMenu);
+    Item.Caption := 'Word';
+    Item.OnClick := @WordClick;
+    FOpenPopupMenu.Items.Add(Item);
+  end;
+
+  if Trim(FOfficeTargets.LibreOfficePath) <> '' then
+  begin
+    Item := TMenuItem.Create(FOpenPopupMenu);
+    Item.Caption := 'LibreOffice';
+    Item.OnClick := @LibreClick;
+    FOpenPopupMenu.Items.Add(Item);
+  end;
+
+  if Trim(FOfficeTargets.TextMakerPath) <> '' then
+  begin
+    Item := TMenuItem.Create(FOpenPopupMenu);
+    Item.Caption := 'TextMaker';
+    Item.OnClick := @TextMakerClick;
+    FOpenPopupMenu.Items.Add(Item);
+  end;
+
+  Item := TMenuItem.Create(FOpenPopupMenu);
+  Item.Caption := '-';
+  FOpenPopupMenu.Items.Add(Item);
+
+  Item := TMenuItem.Create(FOpenPopupMenu);
+  Item.Caption := 'Im Explorer anzeigen';
+  Item.OnClick := @OpenFolderClick;
+  FOpenPopupMenu.Items.Add(Item);
+end;
+
+procedure TMainForm.RebuildCopyPopupMenu;
+var
+  Item: TMenuItem;
+begin
+  FCopyPopupMenu.Items.Clear;
+
+  Item := TMenuItem.Create(FCopyPopupMenu);
+  Item.Caption := 'Nur Kapiteltext';
+  Item.OnClick := @CopyTextClick;
+  FCopyPopupMenu.Items.Add(Item);
+
+  Item := TMenuItem.Create(FCopyPopupMenu);
+  Item.Caption := 'Titel + Kapiteltext';
+  Item.OnClick := @CopyTitleAndTextClick;
+  FCopyPopupMenu.Items.Add(Item);
+
+  Item := TMenuItem.Create(FCopyPopupMenu);
+  Item.Caption := 'Prüfprompt + Kapiteltext';
+  Item.OnClick := @CopyPromptAndTextClick;
+  FCopyPopupMenu.Items.Add(Item);
+
+  Item := TMenuItem.Create(FCopyPopupMenu);
+  Item.Caption := 'Markdown kopieren';
+  Item.OnClick := @CopyMarkdownClick;
+  FCopyPopupMenu.Items.Add(Item);
+end;
+
+procedure TMainForm.RebuildExportPopupMenu;
+var
+  Item: TMenuItem;
+begin
+  FExportPopupMenu.Items.Clear;
+
+  Item := TMenuItem.Create(FExportPopupMenu);
+  Item.Caption := 'Gesamtmanuskript exportieren';
+  Item.OnClick := @ExportClick;
+  FExportPopupMenu.Items.Add(Item);
+
+  if Trim(FOfficeTargets.LibreOfficePath) <> '' then
+  begin
+    Item := TMenuItem.Create(FExportPopupMenu);
+    Item.Caption := 'PDF über LibreOffice';
+    Item.OnClick := @PdfPreviewClick;
+    FExportPopupMenu.Items.Add(Item);
+  end;
+
+  Item := TMenuItem.Create(FExportPopupMenu);
+  Item.Caption := '-';
+  FExportPopupMenu.Items.Add(Item);
+
+  Item := TMenuItem.Create(FExportPopupMenu);
+  Item.Caption := 'Projektordner öffnen';
+  Item.OnClick := @OpenProjectFolderClick;
+  FExportPopupMenu.Items.Add(Item);
+
+  Item := TMenuItem.Create(FExportPopupMenu);
+  Item.Caption := 'Exportordner öffnen';
+  Item.OnClick := @ExportFolderClick;
+  FExportPopupMenu.Items.Add(Item);
+end;
+
+procedure TMainForm.ShowPopupMenuBelow(AControl: TControl; AMenu: TPopupMenu);
+var
+  PointOnScreen: TPoint;
+begin
+  PointOnScreen := AControl.ClientToScreen(Point(0, AControl.Height));
+  AMenu.PopUp(PointOnScreen.X, PointOnScreen.Y);
 end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
   FSelectedIndex := -1;
+  FSettings := TSettingsStore.Load;
   FOfficeTargets := DetectOfficeTargets;
+  SyncDetectedTargetsToSettings;
+  ApplyOfficeOverrides;
   ConfigureUi;
+  BuildPopupMenus;
   PopulateStatusChoices;
   ConfigureButtonGlyphs;
+  RebuildOpenPopupMenu;
+  RebuildCopyPopupMenu;
+  RebuildExportPopupMenu;
+  RefreshWorkflowButtons;
   SelectProjectOverview;
   UpdateStatus('Bereit. Bitte ein Projekt anlegen oder öffnen.');
 end;
 
 destructor TMainForm.Destroy;
 begin
+  FSettings.Free;
   FProject.Free;
   inherited Destroy;
 end;
@@ -179,6 +457,7 @@ procedure TMainForm.ConfigureButtonGlyphs;
 begin
   LoadButtonGlyph(NewButton, 'assets\buttons\new_project.bmp');
   LoadButtonGlyph(OpenButton, 'assets\buttons\open_project.bmp');
+  LoadButtonGlyph(SettingsButton, 'assets\buttons\edit_item.bmp');
   LoadButtonGlyph(AddButton, 'assets\buttons\add_item.bmp');
   LoadButtonGlyph(EditButton, 'assets\buttons\edit_item.bmp');
   LoadButtonGlyph(DeleteButton, 'assets\buttons\delete_item.bmp');
@@ -296,17 +575,24 @@ var
 begin
   if not Assigned(FProject) then
   begin
-    ProjectTitleLabel.Caption := 'Kein Projekt geladen';
-    ProjectSubtitleLabel.Caption := '';
+    CoverImage.Visible := False;
+    ProjectTitleLabel.Caption := 'Willkommen bei Structura';
+    ProjectSubtitleLabel.Caption := 'Lokales Buch-Cockpit für Kapitel, Teile und Notizen';
     ProjectAuthorLabel.Caption := '';
     ProjectStatsLabel.Caption := 'Lege ein neues Projekt an oder öffne einen vorhandenen Ordner.';
-    ProjectStatusLabel.Caption := '';
-    OfficeSummaryLabel.Caption := OfficeAvailabilitySummary;
+    ProjectStatusLabel.Caption := 'Die technische Programmdiagnose findest du in den Einstellungen.';
+    OfficeSummaryLabel.Visible := False;
+    ProjectNotesLabel.Visible := False;
+    ProjectNotesMemo.Visible := False;
     ProjectNotesMemo.Text := '';
     CoverImage.Picture.Clear;
     Exit;
   end;
 
+  CoverImage.Visible := True;
+  OfficeSummaryLabel.Visible := False;
+  ProjectNotesLabel.Visible := True;
+  ProjectNotesMemo.Visible := True;
   ChapterCount := 0;
   if FProject.CoverImagePath <> '' then
   begin
@@ -314,10 +600,10 @@ begin
     if FileExists(CoverPath) then
       CoverImage.Picture.LoadFromFile(CoverPath)
     else
-      CoverImage.Picture.Clear;
+      DrawCoverPlaceholder;
   end
   else
-    CoverImage.Picture.Clear;
+    DrawCoverPlaceholder;
 
   ProjectTitleLabel.Caption := FProject.Title;
   ProjectSubtitleLabel.Caption := FProject.Subtitle;
@@ -336,7 +622,6 @@ begin
       'Projektordner: %s%sKapitel: %d%sGesamtwortzahl: %d',
       [FProject.FolderPath, LineEnding, ChapterCount, LineEnding, ProjectWordCount]);
   ProjectStatusLabel.Caption := 'Projektstatus: ' + ProjectStatusSummary;
-  OfficeSummaryLabel.Caption := OfficeAvailabilitySummary;
 
   FUpdatingUi := True;
   try
@@ -423,20 +708,21 @@ end;
 procedure TMainForm.RefreshActionButtons;
 var
   ChapterAvailable: Boolean;
+  I: Integer;
 begin
   ChapterAvailable := Assigned(CurrentChapter);
   AddButton.Enabled := Assigned(FProject);
   EditButton.Enabled := Assigned(CurrentItem);
   DeleteButton.Enabled := Assigned(CurrentItem);
   OpenChapterButton.Enabled := ChapterAvailable;
-  OpenFolderButton.Enabled := ChapterAvailable;
-  PdfPreviewButton.Enabled := ChapterAvailable and (FOfficeTargets.LibreOfficePath <> '');
-  WordButton.Enabled := ChapterAvailable and (FOfficeTargets.WordPath <> '');
-  LibreButton.Enabled := ChapterAvailable and (FOfficeTargets.LibreOfficePath <> '');
-  TextMakerButton.Enabled := ChapterAvailable and (FOfficeTargets.TextMakerPath <> '');
-  CopyTextButton.Enabled := ChapterAvailable and (Trim(FCurrentPreviewText) <> '');
-  GrammarlyButton.Enabled := ChapterAvailable and (Trim(FCurrentPreviewText) <> '');
+  WordButton.Enabled := ChapterAvailable and (FSettings.WorkflowButtonCount > 0);
+  LibreButton.Enabled := ChapterAvailable and (Trim(FCurrentPreviewText) <> '');
   ExportButton.Enabled := Assigned(FProject);
+  if not ChapterAvailable then
+    ExportButton.Enabled := Assigned(FProject);
+  for I := 0 to High(FWorkflowButtons) do
+    FWorkflowButtons[I].Enabled := ChapterAvailable and
+      (Trim(FCurrentPreviewText) <> '');
 end;
 
 procedure TMainForm.PopulateStatusChoices;
@@ -627,6 +913,13 @@ var
   C: Char;
 begin
   S := Trim(AValue);
+  S := StringReplace(S, 'ä', 'ae', [rfReplaceAll]);
+  S := StringReplace(S, 'ö', 'oe', [rfReplaceAll]);
+  S := StringReplace(S, 'ü', 'ue', [rfReplaceAll]);
+  S := StringReplace(S, 'Ä', 'Ae', [rfReplaceAll]);
+  S := StringReplace(S, 'Ö', 'Oe', [rfReplaceAll]);
+  S := StringReplace(S, 'Ü', 'Ue', [rfReplaceAll]);
+  S := StringReplace(S, 'ß', 'ss', [rfReplaceAll]);
   for C in ['\', '/', ':', '*', '?', '"', '<', '>', '|'] do
     S := StringReplace(S, C, '_', [rfReplaceAll]);
   S := StringReplace(S, ' ', '_', [rfReplaceAll]);
@@ -845,7 +1138,36 @@ begin
     'Standard-DOCX: über Betriebssystem' + LineEnding +
     'Word: ' + IfThen(FOfficeTargets.WordPath <> '', 'gefunden', 'nicht gefunden') + LineEnding +
     'LibreOffice: ' + IfThen(FOfficeTargets.LibreOfficePath <> '', 'gefunden', 'nicht gefunden') + LineEnding +
-    'TextMaker: ' + IfThen(FOfficeTargets.TextMakerPath <> '', 'gefunden', 'nicht gefunden');
+    'TextMaker: ' + IfThen(FOfficeTargets.TextMakerPath <> '', 'gefunden', 'nicht gefunden') + LineEnding +
+    'PDF-Vorschau: nur über LibreOffice verfügbar';
+end;
+
+function TMainForm.BuildWorkflowCopyText(AConfig: TWorkflowButtonConfig): string;
+var
+  Chapter: TStructuraItem;
+begin
+  Chapter := CurrentChapter;
+  if not Assigned(Chapter) then
+    Exit('');
+
+  case AConfig.CopyMode of
+    wcmTitleAndChapterText:
+      Result := Chapter.Title + LineEnding + LineEnding + FCurrentPreviewText;
+    wcmPromptPlusChapter:
+      Result := AConfig.Prefix + FCurrentPreviewText + AConfig.Suffix;
+  else
+    Result := FCurrentPreviewText;
+  end;
+end;
+
+function TMainForm.BuildMarkdownCopyText: string;
+var
+  Chapter: TStructuraItem;
+begin
+  Chapter := CurrentChapter;
+  if not Assigned(Chapter) then
+    Exit('');
+  Result := '# ' + Chapter.Title + LineEnding + LineEnding + FCurrentPreviewText;
 end;
 
 procedure TMainForm.OpenCurrentChapterWithExecutable(const AExecutable: string);
@@ -895,12 +1217,164 @@ begin
   StatusBar.SimpleText := AText;
 end;
 
+procedure TMainForm.WorkflowButtonClick(Sender: TObject);
+var
+  Index: Integer;
+  Config: TWorkflowButtonConfig;
+  Payload: string;
+  ErrorText: string;
+  Opened: Boolean;
+begin
+  if not ((Sender is TButton) or (Sender is TMenuItem)) then
+    Exit;
+  if Sender is TButton then
+    Index := TButton(Sender).Tag
+  else
+    Index := TMenuItem(Sender).Tag;
+  if (not Assigned(FSettings)) or (Index < 0) or
+     (Index >= FSettings.WorkflowButtonCount) then
+    Exit;
+
+  Config := FSettings.WorkflowButtons[Index];
+  Payload := BuildWorkflowCopyText(Config);
+  if Trim(Payload) <> '' then
+    Clipboard.AsText := Payload;
+
+  if Trim(Config.Target) <> '' then
+  begin
+    if Pos('://', Config.Target) > 0 then
+      Opened := OpenURL(Config.Target)
+    else
+      Opened := TryLaunchDetachedProcess(Config.Target, [], ErrorText);
+
+    if not Opened then
+    begin
+      if ErrorText = '' then
+        ErrorText := 'Ziel konnte nicht geöffnet werden.';
+      MessageDlg('Workflow konnte nicht gestartet werden', ErrorText, mtError, [mbOK], 0);
+      Exit;
+    end;
+  end;
+
+  UpdateStatus(Config.Name + ' geöffnet. Der vorbereitete Text liegt in der Zwischenablage.');
+end;
+
+procedure TMainForm.OpenMenuClick(Sender: TObject);
+begin
+  RebuildOpenPopupMenu;
+  ShowPopupMenuBelow(OpenChapterButton, FOpenPopupMenu);
+end;
+
+procedure TMainForm.ReviewMenuClick(Sender: TObject);
+begin
+  RefreshWorkflowButtons;
+  ShowPopupMenuBelow(WordButton, FReviewPopupMenu);
+end;
+
+procedure TMainForm.CopyMenuClick(Sender: TObject);
+begin
+  RebuildCopyPopupMenu;
+  ShowPopupMenuBelow(LibreButton, FCopyPopupMenu);
+end;
+
+procedure TMainForm.ExportMenuClick(Sender: TObject);
+begin
+  RebuildExportPopupMenu;
+  ShowPopupMenuBelow(ExportButton, FExportPopupMenu);
+end;
+
+procedure TMainForm.CopyTitleAndTextClick(Sender: TObject);
+var
+  Chapter: TStructuraItem;
+begin
+  Chapter := CurrentChapter;
+  if not Assigned(Chapter) then
+    Exit;
+  Clipboard.AsText := Chapter.Title + LineEnding + LineEnding + FCurrentPreviewText;
+  UpdateStatus('Kapiteltitel und Kapiteltext in die Zwischenablage kopiert.');
+end;
+
+procedure TMainForm.CopyPromptAndTextClick(Sender: TObject);
+var
+  I: Integer;
+begin
+  for I := 0 to FSettings.WorkflowButtonCount - 1 do
+    if FSettings.WorkflowButtons[I].CopyMode = wcmPromptPlusChapter then
+    begin
+      Clipboard.AsText := BuildWorkflowCopyText(FSettings.WorkflowButtons[I]);
+      UpdateStatus('Prüfprompt und Kapiteltext in die Zwischenablage kopiert.');
+      Exit;
+    end;
+  Clipboard.AsText := FCurrentPreviewText;
+  UpdateStatus('Kein Prüfprompt konfiguriert. Kapiteltext wurde normal kopiert.');
+end;
+
+procedure TMainForm.CopyMarkdownClick(Sender: TObject);
+begin
+  Clipboard.AsText := BuildMarkdownCopyText;
+  UpdateStatus('Markdown-Version des Kapitels in die Zwischenablage kopiert.');
+end;
+
+procedure TMainForm.ExportFolderClick(Sender: TObject);
+var
+  ExportFolder: string;
+begin
+  if not Assigned(FProject) then
+    Exit;
+  ExportFolder := IncludeTrailingPathDelimiter(FProject.FolderPath) + 'export';
+  ForceDirectories(ExportFolder);
+  ShowInFileManager(ExportFolder);
+end;
+
+procedure TMainForm.OpenProjectFolderClick(Sender: TObject);
+begin
+  if not Assigned(FProject) then
+    Exit;
+  ShowInFileManager(FProject.FolderPath);
+end;
+
+procedure TMainForm.BackToOverviewClick(Sender: TObject);
+begin
+  ItemListBox.ItemIndex := -1;
+  SelectProjectOverview;
+end;
+
+procedure TMainForm.DrawCoverPlaceholder;
+var
+  Bmp: TBitmap;
+  W, H: Integer;
+begin
+  W := CoverImage.Width;
+  H := CoverImage.Height;
+  if (W <= 0) or (H <= 0) then
+    W := 260;
+  if H <= 0 then
+    H := 360;
+  Bmp := TBitmap.Create;
+  try
+    Bmp.Width := W;
+    Bmp.Height := H;
+    Bmp.Canvas.Brush.Color := $00D4D0CC;
+    Bmp.Canvas.Pen.Color := $00D4D0CC;
+    Bmp.Canvas.Rectangle(0, 0, W, H);
+    Bmp.Canvas.Font.Color := $00999999;
+    Bmp.Canvas.Font.Size := 9;
+    Bmp.Canvas.Brush.Style := bsClear;
+    Bmp.Canvas.TextOut(W div 2 - 36, H div 2 - 8, 'Kein Cover');
+    CoverImage.Picture.Assign(Bmp);
+  finally
+    Bmp.Free;
+  end;
+end;
+
 procedure TMainForm.NewProjectClick(Sender: TObject);
 var
   DialogResult: TProjectDialogResult;
   Project: TStructuraProject;
   CoverSource, CoverTarget, CoverRelative: string;
 begin
+  if Assigned(FSettings) and (Trim(FSettings.DefaultProjectFolder) <> '') then
+    FLastProjectFolder := FSettings.DefaultProjectFolder;
   DialogResult := ExecuteProjectDialog(FLastProjectFolder);
   if not DialogResult.Confirmed then
     Exit;
@@ -926,6 +1400,11 @@ begin
     '# Projektnotizen' + LineEnding + LineEnding);
   TProjectStore.SaveToFolder(Project);
   SetProject(Project);
+  if Assigned(FSettings) then
+  begin
+    FSettings.DefaultProjectFolder := DialogResult.FolderPath;
+    TSettingsStore.Save(FSettings);
+  end;
   UpdateStatus('Projekt angelegt: ' + DialogResult.Title);
 end;
 
@@ -933,12 +1412,20 @@ procedure TMainForm.OpenProjectClick(Sender: TObject);
 var
   Folder: string;
 begin
-  Folder := FLastProjectFolder;
+  if Assigned(FSettings) and (Trim(FSettings.DefaultProjectFolder) <> '') then
+    Folder := FSettings.DefaultProjectFolder
+  else
+    Folder := FLastProjectFolder;
   if not SelectDirectory('Projektordner wählen', '', Folder) then
     Exit;
   try
     PersistCurrentNotes;
     LoadProjectFromFolder(Folder);
+    if Assigned(FSettings) then
+    begin
+      FSettings.DefaultProjectFolder := Folder;
+      TSettingsStore.Save(FSettings);
+    end;
   except
     on E: Exception do
       MessageDlg('Projekt konnte nicht geladen werden', E.Message, mtError, [mbOK], 0);
@@ -1034,7 +1521,7 @@ end;
 procedure TMainForm.DeleteItemClick(Sender: TObject);
 var
   Item: TStructuraItem;
-  NotesFileName: string;
+  NotesFileName, ChapterFile: string;
 begin
   Item := CurrentItem;
   if not Assigned(Item) then
@@ -1044,6 +1531,13 @@ begin
     'Soll "' + Item.Title + '" wirklich aus der Struktur entfernt werden?',
     mtConfirmation, [mbYes, mbNo], 0) <> mrYes then
     Exit;
+
+  if (Item.ItemType = sitChapter) and (Trim(Item.FileName) <> '') then
+  begin
+    ChapterFile := TProjectStore.AbsolutePath(FProject.FolderPath, Item.FileName);
+    if FileExists(ChapterFile) then
+      CreateBackupCopy(ChapterFile);
+  end;
 
   NotesFileName := AbsoluteItemNotesFileName(Item);
   if (NotesFileName <> '') and FileExists(NotesFileName) then
@@ -1106,10 +1600,24 @@ begin
   SaveProject;
 end;
 
+procedure TMainForm.ProjectNotesChanged(Sender: TObject);
+begin
+  if FUpdatingUi then
+    Exit;
+  PersistProjectNotes;
+end;
+
 procedure TMainForm.NotesExit(Sender: TObject);
 begin
   PersistChapterNotes;
   SaveProject;
+end;
+
+procedure TMainForm.NotesChanged(Sender: TObject);
+begin
+  if FUpdatingUi then
+    Exit;
+  PersistChapterNotes;
 end;
 
 procedure TMainForm.StatusChanged(Sender: TObject);
@@ -1160,9 +1668,10 @@ begin
   if not Assigned(Chapter) then
     Exit;
   if not TDocumentWorkflow.GenerateChapterPdf(FProject.FolderPath, Chapter,
+    FOfficeTargets.LibreOfficePath,
     PdfFileName, ErrorText) then
   begin
-    MessageDlg('PDF-Vorschau fehlgeschlagen', ErrorText, mtError, [mbOK], 0);
+    MessageDlg('PDF über LibreOffice fehlgeschlagen', ErrorText, mtError, [mbOK], 0);
     Exit;
   end;
   OpenDocument(PdfFileName);
@@ -1189,12 +1698,22 @@ begin
   UpdateStatus('Kapiteltext in die Zwischenablage kopiert.');
 end;
 
-procedure TMainForm.GrammarlyClick(Sender: TObject);
+procedure TMainForm.SettingsClick(Sender: TObject);
 begin
-  if Trim(FCurrentPreviewText) <> '' then
-    Clipboard.AsText := FCurrentPreviewText;
-  OpenURL('https://app.grammarly.com/');
-  UpdateStatus('Grammarly geöffnet. Der Kapiteltext liegt in der Zwischenablage.');
+  if not Assigned(FSettings) then
+    Exit;
+  if EditAppSettings(FSettings) then
+  begin
+    FOfficeTargets := DetectOfficeTargets;
+    ApplyOfficeOverrides;
+    RebuildOpenPopupMenu;
+    RebuildExportPopupMenu;
+    RefreshWorkflowButtons;
+    RefreshActionButtons;
+    RefreshProjectView;
+    TSettingsStore.Save(FSettings);
+    UpdateStatus('Einstellungen gespeichert.');
+  end;
 end;
 
 procedure TMainForm.ExportClick(Sender: TObject);
@@ -1216,6 +1735,8 @@ begin
   try
     PersistCurrentNotes;
     SaveProject;
+    if Assigned(FSettings) then
+      TSettingsStore.Save(FSettings);
   except
     on E: Exception do
     begin

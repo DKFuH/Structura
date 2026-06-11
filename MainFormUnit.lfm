@@ -50,7 +50,7 @@ object MainForm: TMainForm
     end
     object ActionPanel: TPanel
       Left = 0
-      Height = 170
+      Height = 214
       Top = 72
       Width = 340
       Align = alTop
@@ -114,7 +114,7 @@ object MainForm: TMainForm
       object Label3: TLabel
         Left = 12
         Height = 45
-        Top = 108
+        Top = 154
         Width = 310
         AutoSize = False
         Caption = 
@@ -125,11 +125,22 @@ object MainForm: TMainForm
         ParentFont = False
         WordWrap = True
       end
+      object SettingsButton: TBitBtn
+        Left = 12
+        Height = 34
+        Top = 104
+        Width = 312
+        Caption = 'Einstellungen'
+        OnClick = SettingsClick
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 5
+      end
     end
     object ListPanel: TPanel
       Left = 0
-      Height = 611
-      Top = 242
+      Height = 567
+      Top = 286
       Width = 340
       Align = alClient
       BevelOuter = bvNone
@@ -249,6 +260,7 @@ object MainForm: TMainForm
         Height = 280
         Top = 438
         Width = 1012
+        OnChange = ProjectNotesChanged
         OnExit = ProjectNotesExit
         ScrollBars = ssAutoBoth
         TabOrder = 0
@@ -316,100 +328,90 @@ object MainForm: TMainForm
           Left = 0
           Height = 34
           Top = 0
-          Width = 120
-          Caption = 'Standard'
-          OnClick = OpenChapterClick
+          Width = 136
+          Caption = 'Öffnen mit ▼'
+          OnClick = OpenMenuClick
           ParentShowHint = False
           ShowHint = True
           TabOrder = 0
         end
         object WordButton: TButton
-          Left = 120
+          Left = 136
           Height = 34
           Top = 0
-          Width = 90
-          Caption = 'Word'
-          OnClick = WordClick
+          Width = 126
+          Caption = 'Prüfen mit ▼'
+          OnClick = ReviewMenuClick
           ParentShowHint = False
           ShowHint = True
           TabOrder = 1
         end
         object LibreButton: TButton
-          Left = 210
+          Left = 262
           Height = 34
           Top = 0
-          Width = 110
-          Caption = 'LibreOffice'
-          OnClick = LibreClick
+          Width = 116
+          Caption = 'Kopieren ▼'
+          OnClick = CopyMenuClick
           ParentShowHint = False
           ShowHint = True
           TabOrder = 2
         end
         object TextMakerButton: TButton
-          Left = 320
+          Left = 378
           Height = 34
           Top = 0
-          Width = 100
-          Caption = 'TextMaker'
-          OnClick = TextMakerClick
+          Width = 1
+          Caption = '.'
+          Visible = False
           ParentShowHint = False
           ShowHint = True
           TabOrder = 3
         end
         object OpenFolderButton: TBitBtn
-          Left = 420
+          Left = 379
           Height = 34
           Top = 0
-          Width = 104
-          Caption = 'Explorer'
-          OnClick = OpenFolderClick
+          Width = 1
+          Caption = '.'
+          Visible = False
           ParentShowHint = False
           ShowHint = True
           TabOrder = 4
         end
         object PdfPreviewButton: TBitBtn
-          Left = 524
+          Left = 380
           Height = 34
           Top = 0
-          Width = 90
-          Caption = 'PDF'
-          OnClick = PdfPreviewClick
+          Width = 1
+          Caption = '.'
+          Hint = 'Optionale PDF-Vorschau über LibreOffice'
+          Visible = False
           ParentShowHint = False
           ShowHint = True
           TabOrder = 5
         end
         object CopyTextButton: TButton
-          Left = 614
+          Left = 381
           Height = 34
           Top = 0
-          Width = 100
-          Caption = 'Kopieren'
-          OnClick = CopyTextClick
+          Width = 1
+          Caption = '.'
+          Visible = False
           ParentShowHint = False
           ShowHint = True
           TabOrder = 6
         end
-        object GrammarlyButton: TButton
-          Left = 714
+        object ExportButton: TBitBtn
+          Left = 378
           Height = 34
           Top = 0
-          Width = 110
-          Caption = 'Grammarly'
-          OnClick = GrammarlyClick
+          Width = 104
+          Caption = 'Export ▼'
+          OnClick = ExportMenuClick
           ParentShowHint = False
           ShowHint = True
           TabOrder = 7
-        end
-        object ExportButton: TBitBtn
-          Left = 824
-          Height = 34
-          Top = 0
-          Width = 100
-          Caption = 'Export'
-          OnClick = ExportClick
-          ParentShowHint = False
-          ShowHint = True
-          TabOrder = 8
         end
       end
       object NotesLabel: TLabel
@@ -427,6 +429,7 @@ object MainForm: TMainForm
         Height = 420
         Top = 320
         Width = 460
+        OnChange = NotesChanged
         OnExit = NotesExit
         ScrollBars = ssAutoBoth
         TabOrder = 2

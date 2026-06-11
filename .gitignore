@@ -1,0 +1,27 @@
+# Lazarus / Free Pascal build artifacts
+*.compiled
+*.ppu
+*.o
+*.obj
+*.or
+*.a
+*.rst
+*.lrt
+*.dbg
+*.dsk
+
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Lazarus local / user files
+*.lps
+*.lpi.bak
+*.bak
+backup/
+
+# OS / editor noise
+Thumbs.db
+.DS_Store

@@ -15,6 +15,7 @@ type
     class function ImportChapterFile(const SourceFile, ProjectFolder, PreferredTitle: string;
       out RelativeFileName, ErrorText: string): Boolean;
     class function GenerateChapterPdf(const ProjectFolder: string; AItem: TStructuraItem;
+      const LibreOfficePath: string;
       out PdfFileName, ErrorText: string): Boolean;
     class function ExportMasterDocument(AProject: TStructuraProject; out InfoText: string): Boolean;
   end;
@@ -260,13 +261,16 @@ begin
 end;
 
 class function TDocumentWorkflow.GenerateChapterPdf(const ProjectFolder: string;
-  AItem: TStructuraItem; out PdfFileName, ErrorText: string): Boolean;
+  AItem: TStructuraItem; const LibreOfficePath: string; out PdfFileName,
+  ErrorText: string): Boolean;
 var
   LibreOfficeExe: string;
   SourceFile: string;
   PreviewFolder: string;
 begin
-  LibreOfficeExe := FindLibreOfficeExecutable;
+  LibreOfficeExe := Trim(LibreOfficePath);
+  if LibreOfficeExe = '' then
+    LibreOfficeExe := FindLibreOfficeExecutable;
   if LibreOfficeExe = '' then
   begin
     ErrorText := 'LibreOffice/soffice wurde nicht gefunden.';

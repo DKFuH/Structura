@@ -1,3 +1,0 @@
-Dies ist ein Platzhalter fuer das erste Kapitel.
-
-Lege spaeter echte DOCX-Dateien in den Projektordner oder ersetze diese Beispieldatei.

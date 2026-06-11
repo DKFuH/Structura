@@ -1,136 +1,136 @@
 # Structura
 
-Structura is a local Windows desktop application for managing non-fiction book manuscripts as chapter-based projects. It is implemented in Free Pascal / Lazarus and intentionally behaves as a book cockpit rather than a full DOCX editor.
+Structura is a local Windows desktop application for organizing non-fiction book projects as chapter-based folders on disk. It is built with Free Pascal and Lazarus and intentionally focuses on project structure, notes, preview, and export workflows instead of becoming a DOCX editor.
 
-## What Structura is for
+## Release status
 
-- Organize chapter structure and order
-- Manage chapter metadata and editing status
-- Store chapter notes as Markdown files
-- Preview chapter text from DOCX files
-- Open chapter files in external editors
-- Keep project data in a plain project folder with `structura.json`
+Structura is being prepared for its first open-source release, `0.1.0`.
+
+The current scope is intentionally small and practical:
+
+- create and open real project folders
+- manage chapters and divider sections
+- reorder chapters with drag and drop
+- store project notes and chapter notes as Markdown files
+- preview extracted text from `.docx` chapter files
+- open chapters in external editors
+- detect optional office targets such as Word, LibreOffice, and TextMaker
+- export a combined master document
+
+The repository is usable and buildable, but `0.1.0` should still be treated as an early release focused on local desktop workflows rather than a polished end-user product.
+
+## What Structura is
+
+- a local-first manuscript cockpit for chapter-based book projects
+- a file-based organizer that keeps project data readable outside the app
+- a companion to Word, LibreOffice, TextMaker, or other external editors
 
 ## What Structura is not
 
-- It is not a DOCX editor
-- It does not replace Word, LibreOffice, or SoftMaker Office
-- It does not require LibreOffice to function
-- It does not require cloud sync or multi-user collaboration
+- not a DOCX editor
+- not a cloud sync service
+- not a collaborative multi-user writing platform
+- not a pixel-perfect DOCX or PDF renderer
 
-## Current implementation
+## Core concepts
 
-The workspace currently contains the following core units:
+Each Structura project is a normal folder on disk. A typical project contains:
 
-- `Structura.lpi` – Lazarus project file
-- `MainFormUnit.pas` – main UI and workflow logic
-- `StructuraTypes.pas` – domain model for project, chapters, dividers, and statuses
-- `ProjectStore.pas` – project persistence to `structura.json` and folder structure management
-- `DocxPreview.pas` – extracts plain text preview from `.docx` by reading `word/document.xml`
-- `ProjectDialogUnit.pas` – project creation/open dialog
-- `ElementDialogUnit.pas` – chapter/divider creation/edit dialog
-- `OfficeDetection.pas` – detection of available external office targets
-- `DocumentWorkflow.pas` – workflow helpers used by the main form
+- `structura.json` for metadata and structure
+- `chapters/` for chapter files, usually `.docx`
+- `notes/` for project and chapter notes in Markdown
+- `backup/` for safety copies before risky file operations
+- `preview/` for generated preview output
+- `export/` for generated master exports
 
-### Project storage model
+Structura supports two structural item types:
 
-A Structura project is stored in a folder with:
+- `chapter` for editable manuscript sections with file, status, and notes
+- `divider` for parts or separators without a chapter document
 
-- `structura.json` – project metadata and ordered item list
-- `chapters/` – chapter files, ideally `.docx`
-- `notes/` – Markdown notes, including `project.md` and chapter notes like `k20260610212026303.md`
-- `backup/` – backup copies created by the app
-- `preview/` – preview output and temporary preview artifacts
+## Platform and requirements
 
-The project model supports two item types:
+- Windows desktop environment
+- Lazarus / Free Pascal toolchain for local builds
+- Lazarus package dependency: `LCL`
+- optional external office tools for editing or PDF workflows:
+  - Microsoft Word
+  - LibreOffice
+  - SoftMaker TextMaker
 
-- `chapter` – contains a title, DOCX filename, status, and notes file
-- `divider` – structural separator without an associated chapter file
+Text preview is intended to work without these external office applications. PDF-related workflows are optional and currently depend on external tooling where available.
 
-### Notes and preview
+## Build from source
 
-- Notes are stored as Markdown files, keeping them readable outside Structura
-- Project notes are saved to `notes/project.md`
-- Chapter notes are saved to `notes/<item-id>.md`
-- Preview text is extracted from `.docx` files by unzipping `word/document.xml` and reading paragraph text
+1. Install Lazarus with a matching Free Pascal toolchain on Windows.
+2. Open `Structura.lpi` in Lazarus.
+3. Build the project from the IDE.
+4. If Lazarus reports stale artifacts, clean local build outputs and rebuild.
 
-## Workspace scan findings
+The repository currently expects standard Lazarus project ingredients only:
 
-The current workspace contains a sample project in `SampleProject/` with:
+- `Structura.lpi`
+- `Structura.lpr`
+- `*.pas`
+- `*.lfm`
+- the standard `LCL` package
 
-- `SampleProject/export/master.md`
-- `SampleProject/chapters/Einleitung.txt`
-- `SampleProject/notes/project.md`
-- `SampleProject/notes/chapter-sample-1.md`
+Units in active use include:
 
-This sample project demonstrates the folder layout and note structure, although the sample chapter file is currently plain text.
+- `MainFormUnit.pas`
+- `ProjectDialogUnit.pas`
+- `ElementDialogUnit.pas`
+- `StructuraTypes.pas`
+- `ProjectStore.pas`
+- `DocxPreview.pas`
+- `DocumentWorkflow.pas`
+- `OfficeDetection.pas`
+- `AppSettings.pas`
+- `SettingsStore.pas`
+- `SettingsDialogUnit.pas`
+- `WorkflowButtonDialogUnit.pas`
 
-## Supported workflow today
+## Repository layout
 
-- Create or open a project folder
-- Display project overview and chapter structure
-- Select chapters to view metadata, notes, and preview text
-- Save chapter and project notes automatically
-- Open chapters in external applications using detected office targets
-- Manage chapter file names, backups, and project JSON storage
+- `assets/` application assets such as icons and button graphics
+- `docs/WORKLIST.md` working roadmap and release checklist
+- `SampleProject/` example project structure for contributors and testers
 
-## Supported statuses
+## Preview, export, and external tools
 
-Current chapter status values defined in `StructuraTypes.pas`:
+Structura treats text preview as a core feature and PDF as optional:
 
-- Rohfassung
-- In Bearbeitung
-- Grammarly geprüft
-- Sprachlich geprüft
-- Fachlich geprüft
-- Final
-- Problem
+- text preview should remain available without LibreOffice
+- PDF generation currently relies on external office tooling when available
+- chapter editing happens in external applications, not inside Structura
+- office target paths can be overridden in the app settings
+- clipboard-based workflow buttons can open websites or tools such as Grammarly, LanguageTool, or ChatGPT
+- manual PDF creation outside the app remains a supported fallback
 
-## Vision and development roadmap
+This keeps the app usable on machines that do not have a full office suite installed.
 
-This README is aligned with the stated Arbeitsbeschreibung for the next Structura development stage.
+## Sample project
 
-### Core goals
+`SampleProject/` is included as a reference layout for contributors and testers. It demonstrates expected folders and files such as `structura.json`, `chapters/`, `notes/`, and generated export output. It is a working example, not a polished showcase manuscript.
 
-- Keep Structura independent from LibreOffice
-- Treat Word, LibreOffice, SoftMaker Office, and the system default editor as optional external tools
-- Maintain DOCX chapters as standalone files
-- Use Markdown for notes
-- Provide a robust local Windows book cockpit
+## Release notes and planning
 
-### Priorities for next version
+- roadmap and open release tasks: `docs/WORKLIST.md`
+- release summary for `0.1.0`: `docs/release-notes.md`
+- version history: `CHANGELOG.md`
 
-1. Open existing projects, show chapter structure, select chapters, preview text, save notes, and open chapters externally
-2. Rename chapters, keep DOCX filenames in sync, move chapters, update numbering, insert dividers, and create backups before unsafe changes
-3. Detect available Word/LibreOffice/SoftMaker installations and enable buttons accordingly, plus support the Grammarly workflow
-4. Add optional PDF preview/export, export profiles, project statistics, and manuscript compilation later
+## Contributing expectations
 
-### Non-goals for this version
+This repository is still settling into its first public release shape. Contributions should keep documentation and behavior aligned:
 
-- No full DOCX editing engine
-- No exact DOCX layout rendering
-- No automated Grammarly control
-- No cloud sync, no multi-user mode
+- do not present planned features as finished
+- keep README and changelog statements consistent with the repository contents
+- do not commit Lazarus build artifacts such as `*.ppu`, `*.o`, `*.obj`, `*.compiled`, or built executables
 
-## Build and run
+See `.gitignore` for the expected ignore rules.
 
-Open `Structura.lpi` in Lazarus and compile the project.
+## License
 
-Required Free Pascal units include:
+Structura is licensed under the Mozilla Public License 2.0 (`MPL-2.0`).
 
-- `zipper`
-- `DOM`
-- `XMLRead`
-- `fpjson`
-- `jsonparser`
-
-## Notes for contributors
-
-- The project data model is intentionally simple and folder-based
-- Project persistence is JSON-centric, while notes remain Markdown
-- The UI is designed for a resizable Windows layout with sidebar and main panel
-- Use `ProjectStore.EnsureProjectFolders` to keep required folders present
-
-## Conclusion
-
-Structura is a lightweight manuscript management tool for Windows authors, built around structured chapter projects and external DOCX editing. The current codebase already implements the key architecture for chapter/divider management, Markdown notes, DOCX preview extraction, and project folder persistence.
+See [LICENSE](LICENSE) for the full license text.

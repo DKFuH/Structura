@@ -1,6 +1,7 @@
 unit DocxPreview;
 
 {$mode objfpc}{$H+}
+{$codepage utf8}
 
 interface
 
@@ -35,10 +36,7 @@ begin
   for I := 0 to ANode.ChildNodes.Count - 1 do
   begin
     ChildText := ExtractNodeText(ANode.ChildNodes.Item[I]);
-    if (ANode.NodeName = 'w:p') and (ChildText <> '') then
-      Result := Result + ChildText
-    else
-      Result := Result + ChildText;
+    Result := Result + ChildText;
   end;
   if (ANode.NodeName = 'w:p') and (Result <> '') then
     Result := Result + LineEnding + LineEnding;
@@ -59,35 +57,40 @@ begin
   if SameText(ExtractFileExt(AFileName), '.txt') or SameText(ExtractFileExt(AFileName), '.md') then
     Exit(Trim(ReadFileToString(AFileName)));
   if not SameText(ExtractFileExt(AFileName), '.docx') then
-    Exit('Vorschau fuer diesen Dateityp ist noch nicht implementiert.');
+    Exit('Vorschau für diesen Dateityp ist noch nicht implementiert.');
 
   TempDir := IncludeTrailingPathDelimiter(GetTempDir(False)) +
     'structura_preview_' + FormatDateTime('yyyymmddhhnnsszzz', Now) + PathDelim;
   ForceDirectories(TempDir);
   UnZipper := TUnZipper.Create;
   FilesToExtract := TStringList.Create;
+  Doc := nil;
   try
-    UnZipper.FileName := AFileName;
-    UnZipper.OutputPath := TempDir;
-    UnZipper.Examine;
-    FilesToExtract.Add('word/document.xml');
-    UnZipper.UnZipFiles(FilesToExtract);
-    DocumentXml := IncludeTrailingPathDelimiter(TempDir) +
-      RelativeProjectPath(['word', 'document.xml']);
-    if not FileExists(DocumentXml) then
-      Exit('Die DOCX-Datei enthaelt kein lesbares word/document.xml.');
-    ReadXMLFile(Doc, DocumentXml);
     try
+      UnZipper.FileName := AFileName;
+      UnZipper.OutputPath := TempDir;
+      UnZipper.Examine;
+      FilesToExtract.Add('word/document.xml');
+      UnZipper.UnZipFiles(FilesToExtract);
+      DocumentXml := IncludeTrailingPathDelimiter(TempDir) +
+        RelativeProjectPath(['word', 'document.xml']);
+      if not FileExists(DocumentXml) then
+        Exit('Textvorschau konnte nicht geladen werden. Die DOCX-Datei enthält kein lesbares word/document.xml.');
+
+      ReadXMLFile(Doc, DocumentXml);
       Result := Trim(ExtractNodeText(Doc.DocumentElement));
       Result := StringReplace(Result, #9#9, #9, [rfReplaceAll]);
       Result := StringReplace(Result, LineEnding + LineEnding + LineEnding,
         LineEnding + LineEnding, [rfReplaceAll]);
       if Result = '' then
-        Result := 'Keine Textvorschau verfuegbar.';
-    finally
-      Doc.Free;
+        Result := 'Keine Textvorschau verfügbar.';
+    except
+      on E: Exception do
+        Result := 'Textvorschau konnte nicht geladen werden. Die DOCX-Datei ist beschädigt oder enthält kein lesbares word/document.xml.' +
+          LineEnding + LineEnding + 'Details: ' + E.Message;
     end;
   finally
+    Doc.Free;
     FilesToExtract.Free;
     UnZipper.Free;
     DeleteDirectory(TempDir, True);

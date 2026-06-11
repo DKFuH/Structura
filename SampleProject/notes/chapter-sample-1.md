@@ -1,5 +1,5 @@
-# Einleitung
+# Neues Kapitel
 
-- Offene Punkte sammeln
-- Struktur pruefen
-- Text spaeter in DOCX ueberfuehren
+- Beispielnotizen für das vorhandene DOCX-Kapitel
+- Struktur prüfen
+- Text später in DOCX überführen

@@ -1,0 +1,126 @@
+object WorkflowButtonDialogForm: TWorkflowButtonDialogForm
+  Left = 520
+  Height = 500
+  Top = 240
+  Width = 620
+  BorderStyle = bsDialog
+  Caption = 'Workflow-Button'
+  ClientHeight = 500
+  ClientWidth = 620
+  Position = poScreenCenter
+  LCLVersion = '4.99.0.0'
+  object MainPanel: TPanel
+    Left = 0
+    Height = 500
+    Top = 0
+    Width = 620
+    Align = alClient
+    BevelOuter = bvNone
+    TabOrder = 0
+    object NameLabel: TLabel
+      Left = 16
+      Height = 15
+      Top = 16
+      Width = 70
+      Caption = 'Button-Name'
+    end
+    object NameEdit: TEdit
+      Left = 16
+      Height = 23
+      Top = 36
+      Width = 588
+      TabOrder = 0
+    end
+    object TargetLabel: TLabel
+      Left = 16
+      Height = 15
+      Top = 72
+      Width = 83
+      Caption = 'Ziel (URL / Pfad)'
+    end
+    object TargetEdit: TEdit
+      Left = 16
+      Height = 23
+      Top = 92
+      Width = 588
+      TabOrder = 1
+    end
+    object CopyModeLabel: TLabel
+      Left = 16
+      Height = 15
+      Top = 128
+      Width = 85
+      Caption = 'Zwischenablage'
+    end
+    object CopyModeCombo: TComboBox
+      Left = 16
+      Height = 23
+      Top = 148
+      Width = 260
+      Style = csDropDownList
+      TabOrder = 2
+    end
+    object HintLabel: TLabel
+      Left = 16
+      Height = 15
+      Top = 184
+      Width = 57
+      Caption = 'Hinweistext'
+    end
+    object HintEdit: TEdit
+      Left = 16
+      Height = 23
+      Top = 204
+      Width = 588
+      TabOrder = 3
+    end
+    object PrefixLabel: TLabel
+      Left = 16
+      Height = 15
+      Top = 240
+      Width = 28
+      Caption = 'Prefix'
+    end
+    object PrefixMemo: TMemo
+      Left = 16
+      Height = 90
+      Top = 260
+      Width = 588
+      ScrollBars = ssAutoBoth
+      TabOrder = 4
+    end
+    object SuffixLabel: TLabel
+      Left = 16
+      Height = 15
+      Top = 364
+      Width = 28
+      Caption = 'Suffix'
+    end
+    object SuffixMemo: TMemo
+      Left = 16
+      Height = 90
+      Top = 384
+      Width = 588
+      ScrollBars = ssAutoBoth
+      TabOrder = 5
+    end
+    object OkButton: TButton
+      Left = 418
+      Height = 25
+      Top = 468
+      Width = 90
+      Caption = 'Speichern'
+      ModalResult = 1
+      TabOrder = 6
+    end
+    object CancelButton: TButton
+      Left = 514
+      Height = 25
+      Top = 468
+      Width = 90
+      Caption = 'Abbrechen'
+      ModalResult = 2
+      TabOrder = 7
+    end
+  end
+end

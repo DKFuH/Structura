@@ -1,12 +1,13 @@
 {
+  "projectVersion" : 1,
   "title" : "Neues Buch",
-  "author" : "",
-  "subtitle" : "",
+  "author" : "Dag",
+  "subtitle" : "Beispielprojekt",
   "coverImage" : "",
   "projectNotes" : "notes\\project.md",
   "items" : [
     {
-      "id" : "part20260610212026303",
+      "id" : "part-sample-1",
       "type" : "divider",
       "title" : "Teil I",
       "fileName" : "",
@@ -14,11 +15,11 @@
       "status" : ""
     },
     {
-      "id" : "k20260610212026303",
+      "id" : "chapter-sample-1",
       "type" : "chapter",
-      "title" : "Einleitung",
-      "fileName" : "chapters\\Einleitung.docx",
-      "notesFileName" : "notes\\k20260610212026303.md",
+      "title" : "Neues Kapitel",
+      "fileName" : "chapters\\Neues_Kapitel.docx",
+      "notesFileName" : "notes\\chapter-sample-1.md",
       "status" : "Rohfassung"
     }
   ]

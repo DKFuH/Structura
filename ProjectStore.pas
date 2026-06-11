@@ -25,6 +25,9 @@ implementation
 uses
   FileUtil;
 
+const
+  CURRENT_PROJECT_VERSION = 1;
+
 function IsAbsolutePath(const APath: string): Boolean;
 begin
   Result := ((Length(APath) > 2) and (APath[2] = ':')) or
@@ -67,7 +70,6 @@ begin
   else
     AProject.CoverImagePath := '';
   AProject.AddDivider('Teil I');
-  AProject.AddChapter('Einleitung', RelativeProjectPath(['chapters', 'Einleitung.docx']));
   SaveToFolder(AProject);
 end;
 
@@ -94,33 +96,43 @@ var
   ItemObj: TJSONObject;
   Item: TStructuraItem;
   I: Integer;
+  Content: string;
 begin
   Result := TStructuraProject.Create;
-  Result.FolderPath := AFolder;
-  Root := TJSONObject(GetJSON(ReadFileToString(ProjectFileName(AFolder))));
   try
-    Result.Title := Root.Get('title', ExtractFileName(AFolder));
-    Result.Author := Root.Get('author', '');
-    Result.Subtitle := Root.Get('subtitle', '');
-    Result.CoverImagePath := NormalizeStoredPath(Root.Get('coverImage', ''));
-    Result.ProjectNotesFileName := NormalizeStoredPath(
-      Root.Get('projectNotes', RelativeProjectPath(['notes', 'project.md'])));
-    Items := Root.Arrays['items'];
-    if Assigned(Items) then
-      for I := 0 to Items.Count - 1 do
-      begin
-        ItemObj := Items.Objects[I];
-        if SameText(ItemObj.Get('type', 'chapter'), 'divider') then
-          Item := Result.AddDivider(ItemObj.Get('title', 'Neuer Teil'))
-        else
-          Item := Result.AddChapter(ItemObj.Get('title', 'Neues Kapitel'),
-            NormalizeStoredPath(ItemObj.Get('fileName', '')));
-        Item.Id := ItemObj.Get('id', Item.Id);
-        Item.Status := ItemObj.Get('status', Item.Status);
-        Item.NotesFileName := NormalizeStoredPath(ItemObj.Get('notesFileName', Item.NotesFileName));
-      end;
-  finally
-    Root.Free;
+    Result.FolderPath := AFolder;
+    Content := ReadFileToString(ProjectFileName(AFolder));
+    Root := TJSONObject(GetJSON(Content));
+    try
+      Result.Title := Root.Get('title', ExtractFileName(AFolder));
+      Result.Author := Root.Get('author', '');
+      Result.Subtitle := Root.Get('subtitle', '');
+      Result.CoverImagePath := NormalizeStoredPath(Root.Get('coverImage', ''));
+      Result.ProjectNotesFileName := NormalizeStoredPath(
+        Root.Get('projectNotes', RelativeProjectPath(['notes', 'project.md'])));
+      Items := Root.Arrays['items'];
+      if Assigned(Items) then
+        for I := 0 to Items.Count - 1 do
+        begin
+          ItemObj := Items.Objects[I];
+          if SameText(ItemObj.Get('type', 'chapter'), 'divider') then
+            Item := Result.AddDivider(ItemObj.Get('title', 'Neuer Teil'))
+          else
+            Item := Result.AddChapter(ItemObj.Get('title', 'Neues Kapitel'),
+              NormalizeStoredPath(ItemObj.Get('fileName', '')));
+          Item.Id := ItemObj.Get('id', Item.Id);
+          Item.Status := ItemObj.Get('status', Item.Status);
+          Item.NotesFileName := NormalizeStoredPath(ItemObj.Get('notesFileName', Item.NotesFileName));
+        end;
+    finally
+      Root.Free;
+    end;
+  except
+    on E: Exception do
+    begin
+      Result.Free;
+      raise Exception.Create('Projektdatei konnte nicht gelesen werden: ' + E.Message);
+    end;
   end;
 end;
 
@@ -131,10 +143,21 @@ var
   ItemObj: TJSONObject;
   I: Integer;
   Content: TStringList;
+  ProjectFile: string;
+  BackupFile: string;
 begin
   EnsureProjectFolders(AProject.FolderPath);
+  ProjectFile := ProjectFileName(AProject.FolderPath);
+  if FileExists(ProjectFile) then
+  begin
+    BackupFile := IncludeTrailingPathDelimiter(AProject.FolderPath) + 'backup' +
+      PathDelim + 'structura-' + FormatDateTime('yyyymmdd-hhnnss', Now) + '.json';
+    ForceDirectories(ExtractFileDir(BackupFile));
+    CopyFile(ProjectFile, BackupFile, [cffOverwriteFile]);
+  end;
   Root := TJSONObject.Create;
   try
+    Root.Add('projectVersion', CURRENT_PROJECT_VERSION);
     Root.Add('title', AProject.Title);
     Root.Add('author', AProject.Author);
     Root.Add('subtitle', AProject.Subtitle);
@@ -159,7 +182,7 @@ begin
     Content := TStringList.Create;
     try
       Content.Text := Root.FormatJSON;
-      Content.SaveToFile(ProjectFileName(AProject.FolderPath));
+      Content.SaveToFile(ProjectFile);
     finally
       Content.Free;
     end;
