@@ -15,21 +15,34 @@ Download the latest `Structura-vX.X.X-windows-x64.zip` from the [Releases page](
 Structura opens a three-step setup wizard on the first start.
 
 **Step 1 — Welcome**
+
+![Setup wizard welcome](screenshots/02_wizard_welcome.jpg)
+
 An overview of what the wizard covers. Click **Weiter →** to proceed or **Überspringen** to skip and configure everything manually later via Settings.
 
 **Step 2 — Root folder (Projektordner)**
+
+![Setup wizard root folder](screenshots/03_wizard_folder.jpg)
+
 Choose a folder on your computer that will act as the container for all your book project subfolders. A good example is `C:\Books` or `D:\Manuscripts`. Structura scans this folder on every startup and shows all subfolders that contain a `structura.json` file as projects on the home screen.
 
 You can leave this field empty and set it later in Settings.
 
 **Step 3 — Done (Alles bereit)**
+
+![Setup wizard done](screenshots/04_wizard_done.jpg)
+
 Structura reports which office tools it found. Microsoft Word and LibreOffice are shown with their detected paths. If a program is not installed, it appears as "nicht gefunden". Click **Loslegen ✓** to start.
 
 ---
 
 ## 3. Create your first project
 
+![Welcome screen](screenshots/01_welcome.jpg)
+
 Click **Neues Projekt** in the sidebar. The new project dialog opens.
+
+![New project dialog](screenshots/05_new_project.jpg)
 
 | Field | Description |
 |---|---|
@@ -55,7 +68,11 @@ YourProjectTitle/
 
 ## 4. Add chapters and dividers
 
+![Project overview](screenshots/06_project_overview.jpg)
+
 With a project open, click **Anlegen** in the sidebar. A dialog asks what you want to create.
+
+![Add element dialog](screenshots/07_add_element.jpg)
 
 **Kapitel (Chapter)**
 A chapter represents one section of your manuscript. Structura creates a numbered DOCX file in `chapters/` and adds the chapter to the project list. You give it a title — the file is named automatically from that title, for example `01_Einleitung.docx`.
@@ -68,6 +85,8 @@ Chapters and dividers can be reordered in the sidebar using drag and drop. Struc
 ---
 
 ## 5. Work with a chapter
+
+![Chapter view](screenshots/08_chapter_view.jpg)
 
 Click a chapter in the sidebar to open its detail view on the right.
 

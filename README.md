@@ -23,6 +23,14 @@ To create your first project, click **Neues Projekt**, enter a title, and Struct
 
 For a step-by-step walkthrough see [`docs/first-steps.md`](docs/first-steps.md).
 
+## Screenshots
+
+![Welcome screen](docs/screenshots/01_welcome.jpg)
+
+![New project dialog](docs/screenshots/05_new_project.jpg)
+
+![Chapter view](docs/screenshots/08_chapter_view.jpg)
+
 ## What Structura does
 
 - create and open book project folders
