@@ -204,7 +204,8 @@ uses
   LCLIntf, LCLType, FileUtil, Process, Clipbrd, StrUtils, Math, DateUtils, Zipper,
   ProjectStore, ProjectDialogUnit, ElementDialogUnit, DocumentWorkflow,
   DocxPreview, SettingsStore, SettingsDialogUnit, FirstRunWizardUnit,
-  ImportProjectDialogUnit, AboutDialogUnit, ReviewDialogUnit, MarkdownPreview;
+  ImportProjectDialogUnit, AboutDialogUnit, ReviewDialogUnit, MarkdownPreview,
+  ExportDialogUnit;
 
 function NormalizeStoredPathForCompare(const APath: string): string;
 begin
@@ -2899,11 +2900,19 @@ end;
 procedure TMainForm.ExportClick(Sender: TObject);
 var
   InfoText: string;
+  Options: TExportOptions;
+  Digits: Integer;
 begin
   if not Assigned(FProject) then
     Exit;
   PersistCurrentNotes;
-  if TDocumentWorkflow.ExportMasterDocument(FProject, InfoText) then
+  Digits := 2;
+  if Assigned(FSettings) and (FSettings.ChapterNumberDigits >= 1) and
+     (FSettings.ChapterNumberDigits <= 3) then
+    Digits := FSettings.ChapterNumberDigits;
+  if not ShowExportDialog(FProject, Digits, Options) then
+    Exit;
+  if TDocumentWorkflow.ExportMasterDocument(FProject, Options, InfoText) then
     MessageDlg('Export abgeschlossen', InfoText, mtInformation, [mbOK], 0)
   else
     MessageDlg('Export fehlgeschlagen', InfoText, mtError, [mbOK], 0);

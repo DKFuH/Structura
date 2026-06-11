@@ -8,6 +8,17 @@ uses
   Classes, SysUtils, StructuraTypes;
 
 type
+  // Optionen für den Manuskript-Export. SelectedItems ist parallel zu den
+  // Projekt-Items indiziert; leeres Array bedeutet: alles exportieren.
+  TExportOptions = record
+    IncludeTitlePage: Boolean;
+    NumberChapters: Boolean;
+    NumberDigits: Integer;       // 1..3, Stellen der Kapitelnummer
+    IncludeDividers: Boolean;
+    ReviewExport: Boolean;       // zusätzlich eine Textdatei pro Kapitel
+    SelectedItems: array of Boolean;
+  end;
+
   TDocumentWorkflow = class
   public
     class function FindLibreOfficeExecutable: string;
@@ -17,7 +28,9 @@ type
     class function GenerateChapterPdf(const ProjectFolder: string; AItem: TStructuraItem;
       const LibreOfficePath: string;
       out PdfFileName, ErrorText: string): Boolean;
-    class function ExportMasterDocument(AProject: TStructuraProject; out InfoText: string): Boolean;
+    class function DefaultExportOptions: TExportOptions;
+    class function ExportMasterDocument(AProject: TStructuraProject;
+      const AOptions: TExportOptions; out InfoText: string): Boolean;
   end;
 
 implementation
@@ -291,19 +304,36 @@ begin
     ErrorText := 'PDF-Vorschau wurde nicht erzeugt.';
 end;
 
+class function TDocumentWorkflow.DefaultExportOptions: TExportOptions;
+begin
+  Result.IncludeTitlePage := True;
+  Result.NumberChapters := True;
+  Result.NumberDigits := 2;
+  Result.IncludeDividers := True;
+  Result.ReviewExport := False;
+  SetLength(Result.SelectedItems, 0);
+end;
+
 class function TDocumentWorkflow.ExportMasterDocument(AProject: TStructuraProject;
-  out InfoText: string): Boolean;
+  const AOptions: TExportOptions; out InfoText: string): Boolean;
+
+  function ItemSelected(AIndex: Integer): Boolean;
+  begin
+    Result := (Length(AOptions.SelectedItems) = 0) or
+      ((AIndex < Length(AOptions.SelectedItems)) and AOptions.SelectedItems[AIndex]);
+  end;
+
 var
-  ExportFolder: string;
+  ExportFolder, ReviewFolder: string;
   MarkdownFile: string;
   HtmlFile: string;
   Html: TStringList;
   Markdown: TStringList;
   I: Integer;
   Item: TStructuraItem;
-  ChapterNumber: Integer;
+  ChapterNumber, ExportedChapters: Integer;
   SourceFile: string;
-  ChapterText: string;
+  ChapterText, Heading, NumberText: string;
   LibreOfficeExe: string;
   ErrorText: string;
   MasterDocx: string;
@@ -316,35 +346,75 @@ begin
   HtmlFile := IncludeTrailingPathDelimiter(ExportFolder) + 'master.html';
   MasterDocx := IncludeTrailingPathDelimiter(ExportFolder) + 'master.docx';
   MasterPdf := IncludeTrailingPathDelimiter(ExportFolder) + 'master.pdf';
+  ReviewFolder := IncludeTrailingPathDelimiter(ExportFolder) + 'review';
+  if AOptions.ReviewExport then
+    ForceDirectories(ReviewFolder);
 
   Html := TStringList.Create;
   Markdown := TStringList.Create;
   try
     Html.Add('<html><head><meta charset="utf-8"><title>' + HtmlEscape(AProject.Title) + '</title></head><body>');
-    Html.Add('<h1>' + HtmlEscape(AProject.Title) + '</h1>');
-    Markdown.Add('# ' + AProject.Title);
-    Markdown.Add('');
+    if AOptions.IncludeTitlePage then
+    begin
+      Html.Add('<h1>' + HtmlEscape(AProject.Title) + '</h1>');
+      if Trim(AProject.Subtitle) <> '' then
+        Html.Add('<p><i>' + HtmlEscape(AProject.Subtitle) + '</i></p>');
+      if Trim(AProject.Author) <> '' then
+        Html.Add('<p>' + HtmlEscape(AProject.Author) + '</p>');
+      Html.Add('<hr>');
+      Markdown.Add('# ' + AProject.Title);
+      if Trim(AProject.Subtitle) <> '' then
+        Markdown.Add('*' + AProject.Subtitle + '*');
+      if Trim(AProject.Author) <> '' then
+        Markdown.Add(AProject.Author);
+      Markdown.Add('');
+      Markdown.Add('---');
+      Markdown.Add('');
+    end;
+
     ChapterNumber := 0;
+    ExportedChapters := 0;
     for I := 0 to AProject.Count - 1 do
     begin
       Item := AProject[I];
       if Item.ItemType = sitDivider then
       begin
-        Html.Add('<h1>' + HtmlEscape(Item.Title) + '</h1>');
-        Markdown.Add('## ' + Item.Title);
-        Markdown.Add('');
+        if AOptions.IncludeDividers then
+        begin
+          Html.Add('<h1>' + HtmlEscape(Item.Title) + '</h1>');
+          Markdown.Add('# ' + Item.Title);
+          Markdown.Add('');
+        end;
         Continue;
       end;
 
       Inc(ChapterNumber);
+      if not ItemSelected(I) then
+        Continue;
+      Inc(ExportedChapters);
+
+      if AOptions.NumberChapters then
+        NumberText := Format('%.*d ', [AOptions.NumberDigits, ChapterNumber])
+      else
+        NumberText := '';
+      Heading := NumberText + Item.Title;
+
       SourceFile := IncludeTrailingPathDelimiter(AProject.FolderPath) + Item.FileName;
       ChapterText := TDocxPreview.LoadPreviewText(SourceFile);
-      Html.Add('<h2>' + Format('%0.2d %s', [ChapterNumber, HtmlEscape(Item.Title)]) + '</h2>');
+      Html.Add('<h2>' + HtmlEscape(Heading) + '</h2>');
       Html.Add(BuildHtmlFromText(ChapterText));
-      Markdown.Add('## ' + Format('%0.2d %s', [ChapterNumber, Item.Title]));
+      Markdown.Add('## ' + Heading);
       Markdown.Add('');
       Markdown.Add(ChapterText);
       Markdown.Add('');
+
+      // Prüfexport: reiner Text pro Kapitel, zum Einfügen in Grammarly,
+      // LanguageTool oder ChatGPT
+      if AOptions.ReviewExport then
+        SaveTextFile(IncludeTrailingPathDelimiter(ReviewFolder) +
+          Format('%.*d_%s.txt', [AOptions.NumberDigits, ChapterNumber,
+            SanitizeFileNamePart(Item.Title)]),
+          Item.Title + LineEnding + LineEnding + ChapterText);
     end;
     Html.Add('</body></html>');
     Html.SaveToFile(HtmlFile);
@@ -352,6 +422,12 @@ begin
   finally
     Html.Free;
     Markdown.Free;
+  end;
+
+  if ExportedChapters = 0 then
+  begin
+    InfoText := 'Kein Kapitel ausgewählt — es wurde nichts exportiert.';
+    Exit(False);
   end;
 
   LibreOfficeExe := FindLibreOfficeExecutable;
@@ -373,11 +449,14 @@ begin
     end;
   end;
 
-  InfoText := 'Export erstellt: ' + MarkdownFile;
+  InfoText := Format('Export erstellt (%d Kapitel): %s',
+    [ExportedChapters, MarkdownFile]);
   if FileExists(MasterDocx) then
     InfoText := InfoText + LineEnding + 'DOCX: ' + MasterDocx;
   if FileExists(MasterPdf) then
     InfoText := InfoText + LineEnding + 'PDF: ' + MasterPdf;
+  if AOptions.ReviewExport then
+    InfoText := InfoText + LineEnding + 'Prüfexport: ' + ReviewFolder;
   Result := True;
 end;
 

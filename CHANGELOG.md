@@ -7,6 +7,19 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.4.0] — 2026-06-11
+
+### Added
+
+- Export dialog: choose which chapters to export (checklist, dividers shown as section rows), toggle title page (title, subtitle, author), chapter numbering in headings, and divider headings
+- Review export: optionally writes one plain-text file per selected chapter to `export/review/` — ready to paste into Grammarly, LanguageTool, or ChatGPT
+
+### Changed
+
+- Master export uses the rewritten robust DOCX text extraction and the configured chapter number format; exporting with no chapters selected reports an error instead of writing an empty manuscript
+
+---
+
 ## [0.3.0] — 2026-06-11
 
 ### Added

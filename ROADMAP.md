@@ -48,10 +48,13 @@ A view built for the revision phase, not the drafting phase.
 
 ## 0.4.x — Export
 
-- more stable combined manuscript export
-- export profiles (title page, chapter numbering options)
+**Done (released as 0.4.0):**
+- more stable combined manuscript export (in-memory DOCX extraction)
+- export options: title page, chapter numbering, divider headings
 - chapter selection for export
-- review export for Grammarly/ChatGPT workflows
+- review export for Grammarly/ChatGPT workflows (one text file per chapter)
+
+**Planned:**
 - better import from existing DOCX folder structures
 
 ## 1.0.0 — Ready for real book projects
