@@ -33,6 +33,7 @@ type
     FStatusCounts: array[0..High(STRUCTURA_STATUSES)] of Integer;
     FOpenTaskCount: Integer;
     FNextStepText: string;
+    FHintText: string;
     FDashboardLinks: array of TLabel;
     FNotesHtmlPanel: TIpHtmlPanel;
     FNotesToggleLabel: TLabel;
@@ -353,7 +354,7 @@ begin
   // Status-Dashboard in der Projektübersicht
   FDashboardBox := TPaintBox.Create(Self);
   FDashboardBox.Parent := ProjectPanel;
-  FDashboardBox.SetBounds(316, 244, 720, 160);
+  FDashboardBox.SetBounds(316, 244, 720, 172);
   FDashboardBox.OnPaint := @DashboardPaint;
   FDashboardBox.Visible := False;
   ProjectStatusLabel.Visible := False;
@@ -1160,17 +1161,26 @@ begin
 end;
 
 procedure TMainForm.ComputeDashboardData;
+const
+  StaleDays = 30;
 var
-  I, NextIndex, BestRank, Rank: Integer;
+  I, NextIndex, BestRank, Rank, TasksHere: Integer;
+  ChaptersWithTasks, StaleChapters: Integer;
   Item, NextItem: TStructuraItem;
+  FileName: string;
+  FileDate: TDateTime;
+  Hints: TStringList;
 begin
   for I := Low(FStatusCounts) to High(FStatusCounts) do
     FStatusCounts[I] := 0;
   FOpenTaskCount := 0;
   FNextStepText := '';
+  FHintText := '';
   if not Assigned(FProject) then
     Exit;
 
+  ChaptersWithTasks := 0;
+  StaleChapters := 0;
   NextItem := nil;
   NextIndex := -1;
   BestRank := MaxInt;
@@ -1180,7 +1190,19 @@ begin
     if Item.ItemType <> sitChapter then
       Continue;
     Inc(FStatusCounts[StatusIndex(Item.Status)]);
-    Inc(FOpenTaskCount, CountOpenTasksInNotes(AbsoluteItemNotesFileName(Item)));
+    TasksHere := CountOpenTasksInNotes(AbsoluteItemNotesFileName(Item));
+    Inc(FOpenTaskCount, TasksHere);
+    if TasksHere > 0 then
+      Inc(ChaptersWithTasks);
+
+    // „lange nicht bearbeitet": Dateialter, nur für noch nicht finale Kapitel
+    if StatusIndex(Item.Status) <> STATUS_FINAL_INDEX then
+    begin
+      FileName := AbsoluteItemFileName(Item);
+      if FileExists(FileName) and FileAge(FileName, FileDate) then
+        if Trunc(Now) - Trunc(FileDate) > StaleDays then
+          Inc(StaleChapters);
+    end;
 
     // Nächster Schritt: Problemkapitel zuerst, sonst das Kapitel mit dem
     // niedrigsten Bearbeitungsstand. Finale Kapitel brauchen nichts mehr.
@@ -1211,6 +1233,27 @@ begin
   end
   else if FStatusCounts[STATUS_FINAL_INDEX] > 0 then
     FNextStepText := 'Alle Kapitel final — bereit für den Export.';
+
+  // Dezente Hinweise (Prinzip 5: mitdenken, nicht bevormunden) — eine ruhige
+  // Zeile aus Fakten, die schon vorliegen, mittendrin getrennt durch „·".
+  Hints := TStringList.Create;
+  try
+    if FStatusCounts[0] > 0 then
+      Hints.Add(Format('%d noch Rohfassung', [FStatusCounts[0]]));
+    if ChaptersWithTasks > 0 then
+      Hints.Add(Format('%d mit offenen Aufgaben', [ChaptersWithTasks]));
+    if StaleChapters > 0 then
+      Hints.Add(Format('%d seit über %d Tagen unbearbeitet',
+        [StaleChapters, StaleDays]));
+    for I := 0 to Hints.Count - 1 do
+    begin
+      if FHintText <> '' then
+        FHintText := FHintText + '   ·   ';
+      FHintText := FHintText + Hints[I];
+    end;
+  finally
+    Hints.Free;
+  end;
 end;
 
 procedure TMainForm.AboutLinkClick(Sender: TObject);
@@ -1570,7 +1613,7 @@ end;
 procedure TMainForm.RebuildDashboardLinks;
 const
   MaxEntries = 4;
-  LinksTop = 414;
+  LinksTop = 424;
   RowHeight = 20;
   ProblemLeft = 316;
   RecentLeft = 676;
@@ -1771,6 +1814,11 @@ begin
     C.Font.Style := [fsBold];
     C.TextOut(0, LegendTop + 4 * RowHeight + 26, FNextStepText);
     C.Font.Style := [];
+  end;
+  if FHintText <> '' then
+  begin
+    C.Font.Color := clGrayText;
+    C.TextOut(0, LegendTop + 4 * RowHeight + 48, FHintText);
   end;
   C.Brush.Style := bsSolid;
 end;

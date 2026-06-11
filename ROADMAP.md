@@ -38,6 +38,8 @@ When a project is open, the overview should answer at a glance: what is done, wh
 - recently edited chapters, clickable
 - per-chapter open-task count in the chapter view
 - fast keyboard navigation: Alt+←/→ chapters, Alt+O next open, Alt+P next problem
+- editable per-chapter task checklist (Markdown-backed) + responsive chapter view
+- gentle dashboard hints (principle 5: "Mitdenken ohne Dominieren") — drafts remaining, chapters with open tasks, chapters untouched for 30+ days
 
 ## 0.3.x — Review mode (relief)
 

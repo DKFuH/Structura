@@ -13,6 +13,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 - Open-tasks checklist in the chapter view: add tasks via an input field (Enter or "+"), tick them off with checkboxes. Tasks are stored as Markdown checkboxes (`- [ ]` / `- [x]`) in the chapter notes, so they stay readable and editable without the app and feed the dashboard and review-table counts
 - The chapter view now scales with the window: notes, tasks, and preview reflow to the available width and height instead of staying at fixed positions
+- Gentle hint line on the dashboard: a single quiet row summarising drafts still remaining, chapters with open tasks, and chapters untouched for 30+ days — informs without nagging (design principle "Mitdenken ohne Dominieren")
 
 ### Changed
 
