@@ -3,6 +3,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GitHub Release](https://img.shields.io/github/v/release/DKFuH/Structura)](https://github.com/DKFuH/Structura/releases/latest)
 
+→ [Deutsche Dokumentation](README.de.md)
+
 Structura is a local Windows desktop application for organizing non-fiction book projects as chapter-based folders on disk. It is built with Free Pascal and Lazarus and intentionally focuses on project structure, notes, preview, and export workflows instead of becoming a DOCX editor.
 
 ## Download
@@ -10,6 +12,8 @@ Structura is a local Windows desktop application for organizing non-fiction book
 Pre-built Windows binaries are available on the [Releases page](https://github.com/DKFuH/Structura/releases).
 
 Download the latest `Structura-vX.X.X-windows-x64.zip`, extract it anywhere, and run `Structura.exe`. No installer required.
+
+> **Windows SmartScreen warning:** Because Structura is not commercially code-signed, Windows may show a "Windows protected your PC" warning on first launch. This is expected for unsigned open-source software. Click **More info** → **Run anyway** to proceed. The source code is fully available in this repository if you want to verify what you are running.
 
 ## Getting started
 
