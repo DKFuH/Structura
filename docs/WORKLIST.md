@@ -75,7 +75,7 @@ Structura ist ein lokales Windows-Tool zur Verwaltung von Buchprojekten mit einz
 - [x] Reihenfolge sichtbar machen
 - [x] Status je Kapitel anzeigen
 - [x] aktive Auswahl klar markieren
-- [ ] lange Kapitelnamen sauber kürzen oder umbrechen
+- [x] lange Kapitelnamen sauber kürzen oder umbrechen
 
 ### 4.2 Kapitel
 
@@ -94,7 +94,7 @@ Structura ist ein lokales Windows-Tool zur Verwaltung von Buchprojekten mit einz
 - [x] Trenner umbenennen
 - [x] Trenner verschieben
 - [x] Trenner ohne DOCX-Datei speichern
-- [ ] Trenner optisch anders darstellen als Kapitel
+- [x] Trenner optisch anders darstellen als Kapitel
 
 Beispiele:
 
@@ -484,7 +484,7 @@ Keine stillen Fehler. Der Nutzer muss verstehen, was passiert ist.
 - [x] Status in Seitenleiste anzeigen
 - [x] Status im Projekt speichern
 - [x] Statusänderung sofort speichern
-- [ ] später optional Statusfarben
+- [x] Statusfarben als farbige Punkte in der Seitenleiste
 
 ---
 

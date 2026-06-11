@@ -17,6 +17,9 @@ Versioning: [Semantic Versioning](https://semver.org/)
 - Proactive file lock check before renaming chapter files: if a chapter DOCX is open in another program, the rename is refused with a clear message before any file is touched (single rename and bulk renumbering)
 - Daily zipped project backup: on first open of a project each day, the entire project (excluding the backup folder) is archived to `backup/daily/YYYY-MM-DD.zip`; backups older than a configurable retention (default 14 days, settable in settings) are deleted automatically
 - Changing the chapter number format asks explicitly whether existing chapter files should be renamed — nothing is renamed silently
+- Colored status dots in the chapter sidebar (gray draft → green final, red problem) — replaces the bracketed status text
+- Dividers are now visually distinct in the sidebar (bold on gray background instead of `--- title ---`)
+- Long chapter titles are truncated with an ellipsis instead of overflowing
 
 ### Changed
 

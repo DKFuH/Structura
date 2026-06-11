@@ -18,11 +18,11 @@ The goal of the 0.1.x series is a reliable, calm desktop workflow for authors wh
 - file lock check before renaming — projects never end up half-renamed
 - daily zipped project backups with configurable retention
 
+- colored status dots in the sidebar, dividers visually distinct, long titles truncated cleanly
+
 **Planned for 0.1.x:**
 - improved SampleProject layout
 - screenshots in documentation
-- long chapter names: truncate or wrap cleanly in sidebar
-- dividers visually distinct from chapters in the sidebar
 
 ## 0.2.x — Author dashboard (orientation & progress)
 

@@ -67,6 +67,7 @@ type
     function ChapterSequenceForItem(AItem: TStructuraItem): Integer;
     function BuildChapterFileName(AItem: TStructuraItem; AListIndex: Integer): string;
     function BuildChapterListCaption(AIndex: Integer; AItem: TStructuraItem): string;
+    function StatusColor(const AStatus: string): TColor;
     function EnsureUniqueRelativeFileName(const ARelative: string): string;
     function MakeSafeFileNamePart(const AValue: string): string;
     function CreateBackupCopy(const AAbsoluteFileName: string): Boolean;
@@ -144,6 +145,8 @@ type
     procedure ItemListDragOver(Sender, Source: TObject; X, Y: Integer;
       State: TDragState; var Accept: Boolean);
     procedure ItemListDragDrop(Sender, Source: TObject; X, Y: Integer);
+    procedure ItemListDrawItem(Control: TWinControl; Index: Integer;
+      ARect: TRect; State: TOwnerDrawState);
     procedure ProjectNotesExit(Sender: TObject);
     procedure ProjectNotesChanged(Sender: TObject);
     procedure NotesExit(Sender: TObject);
@@ -941,12 +944,99 @@ end;
 
 function TMainForm.BuildChapterListCaption(AIndex: Integer; AItem: TStructuraItem): string;
 begin
+  // Status erscheint als farbiger Punkt (ItemListDrawItem), Trenner werden
+  // dort optisch abgesetzt — der Caption-Text bleibt deshalb schlicht.
   if AItem.ItemType = sitDivider then
-    Exit('--- ' + AItem.Title + ' ---');
+    Exit(AItem.Title);
 
   Result := Format('%s  %s', [FormatChapterNumber(ChapterSequenceForIndex(AIndex)), AItem.Title]);
-  if Trim(AItem.Status) <> '' then
-    Result := Result + '  [' + AItem.Status + ']';
+end;
+
+function TMainForm.StatusColor(const AStatus: string): TColor;
+begin
+  if SameText(AStatus, 'In Bearbeitung') then
+    Result := TColor($0000B4FF)   // Amber
+  else if SameText(AStatus, 'Grammarly geprüft') then
+    Result := TColor($00FFB464)   // Hellblau
+  else if SameText(AStatus, 'Sprachlich geprüft') then
+    Result := TColor($00DC781E)   // Blau
+  else if SameText(AStatus, 'Fachlich geprüft') then
+    Result := TColor($00A0A000)   // Petrol
+  else if SameText(AStatus, 'Final') then
+    Result := TColor($0050AA28)   // Grün
+  else if SameText(AStatus, 'Problem') then
+    Result := TColor($00323CDC)   // Rot
+  else
+    Result := clSilver;           // Rohfassung / unbekannt
+end;
+
+procedure TMainForm.ItemListDrawItem(Control: TWinControl; Index: Integer;
+  ARect: TRect; State: TOwnerDrawState);
+var
+  ListBox: TListBox;
+  Item: TStructuraItem;
+  TextRect: TRect;
+  TextStyle: TTextStyle;
+  CenterY, Radius: Integer;
+  IsSelected, IsDivider: Boolean;
+begin
+  ListBox := TListBox(Control);
+  IsSelected := odSelected in State;
+
+  Item := nil;
+  if Assigned(FProject) and (Index >= 0) and (Index < FProject.Count) then
+    Item := FProject[Index];
+  IsDivider := Assigned(Item) and (Item.ItemType = sitDivider);
+
+  if IsSelected then
+  begin
+    ListBox.Canvas.Brush.Color := clHighlight;
+    ListBox.Canvas.Font.Color := clHighlightText;
+  end
+  else if IsDivider then
+  begin
+    ListBox.Canvas.Brush.Color := clBtnFace;
+    ListBox.Canvas.Font.Color := clGrayText;
+  end
+  else
+  begin
+    ListBox.Canvas.Brush.Color := clWindow;
+    ListBox.Canvas.Font.Color := clWindowText;
+  end;
+  ListBox.Canvas.FillRect(ARect);
+
+  TextRect := ARect;
+  TextRect.Right := TextRect.Right - 4;
+
+  if IsDivider then
+  begin
+    ListBox.Canvas.Font.Style := [fsBold];
+    TextRect.Left := TextRect.Left + 8;
+  end
+  else
+  begin
+    ListBox.Canvas.Font.Style := [];
+    // Statuspunkt links vor dem Kapiteltitel
+    if Assigned(Item) then
+    begin
+      CenterY := (ARect.Top + ARect.Bottom) div 2;
+      Radius := 5;
+      ListBox.Canvas.Pen.Color := clGray;
+      ListBox.Canvas.Brush.Color := StatusColor(Item.Status);
+      ListBox.Canvas.Ellipse(ARect.Left + 8, CenterY - Radius,
+        ARect.Left + 8 + 2 * Radius, CenterY + Radius);
+    end;
+    TextRect.Left := TextRect.Left + 26;
+  end;
+
+  ListBox.Canvas.Brush.Style := bsClear;
+  TextStyle := ListBox.Canvas.TextStyle;
+  TextStyle.Layout := tlCenter;
+  TextStyle.SingleLine := True;
+  TextStyle.EndEllipsis := True;
+  ListBox.Canvas.TextRect(TextRect, TextRect.Left, TextRect.Top,
+    ListBox.Items[Index], TextStyle);
+  ListBox.Canvas.Brush.Style := bsSolid;
 end;
 
 function TMainForm.EnsureUniqueRelativeFileName(const ARelative: string): string;

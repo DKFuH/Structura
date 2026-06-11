@@ -30,7 +30,6 @@ type
     NotesFileName: string;
     Status: string;
     constructor Create(AType: TStructuraItemType);
-    function DisplayTitle(Index: Integer): string;
   end;
 
   TStructuraProject = class
@@ -93,14 +92,6 @@ begin
   inherited Create;
   ItemType := AType;
   Status := DefaultChapterStatus;
-end;
-
-function TStructuraItem.DisplayTitle(Index: Integer): string;
-begin
-  if ItemType = sitChapter then
-    Result := Format('%0.2d  %s', [Index + 1, Title])
-  else
-    Result := '--- ' + Title + ' ---';
 end;
 
 constructor TStructuraProject.Create;
