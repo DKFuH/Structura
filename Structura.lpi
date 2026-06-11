@@ -26,7 +26,6 @@
       <Unit>
         <Filename Value="Structura.lpr"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <UsageCount Value="21"/>
       </Unit>
       <Unit>
@@ -35,31 +34,26 @@
         <ComponentName Value="MainForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <IsVisibleTab Value="True"/>
         <UsageCount Value="21"/>
       </Unit>
       <Unit>
         <Filename Value="StructuraTypes.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <UsageCount Value="21"/>
       </Unit>
       <Unit>
         <Filename Value="ProjectStore.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <UsageCount Value="21"/>
       </Unit>
       <Unit>
         <Filename Value="DocxPreview.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <UsageCount Value="21"/>
       </Unit>
       <Unit>
         <Filename Value="DocumentWorkflow.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <UsageCount Value="21"/>
       </Unit>
       <Unit>
@@ -68,7 +62,6 @@
         <ComponentName Value="ProjectDialogForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <IsVisibleTab Value="True"/>
         <UsageCount Value="21"/>
       </Unit>
       <Unit>
@@ -77,25 +70,21 @@
         <ComponentName Value="ElementDialogForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <IsVisibleTab Value="True"/>
         <UsageCount Value="21"/>
       </Unit>
       <Unit>
         <Filename Value="OfficeDetection.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <UsageCount Value="21"/>
       </Unit>
       <Unit>
         <Filename Value="AppSettings.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <UsageCount Value="21"/>
       </Unit>
       <Unit>
         <Filename Value="SettingsStore.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <UsageCount Value="21"/>
       </Unit>
       <Unit>
@@ -104,7 +93,6 @@
         <ComponentName Value="WorkflowButtonDialogForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <IsVisibleTab Value="True"/>
         <UsageCount Value="21"/>
       </Unit>
       <Unit>
@@ -113,14 +101,25 @@
         <ComponentName Value="SettingsDialogForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <IsVisibleTab Value="True"/>
         <UsageCount Value="21"/>
       </Unit>
       <Unit>
         <Filename Value="FirstRunWizardUnit.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
+        <UsageCount Value="20"/>
+      </Unit>
+      <Unit>
+        <Filename Value="ImportProjectDialogUnit.pas"/>
+        <IsPartOfProject Value="True"/>
         <UsageCount Value="1"/>
+      </Unit>
+      <Unit>
+        <Filename Value="../../lazarus/lcl/include/control.inc"/>
+        <IsVisibleTab Value="True"/>
+        <TopLine Value="2829"/>
+        <CursorPos Y="2846"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
       </Unit>
     </Units>
     <JumpHistory HistoryIndex="-1"/>

@@ -50,7 +50,7 @@ object MainForm: TMainForm
     end
     object ActionPanel: TPanel
       Left = 0
-      Height = 214
+      Height = 260
       Top = 72
       Width = 340
       Align = alTop
@@ -78,10 +78,21 @@ object MainForm: TMainForm
         ShowHint = True
         TabOrder = 1
       end
-      object AddButton: TBitBtn
+      object ImportButton: TBitBtn
         Left = 12
         Height = 34
         Top = 58
+        Width = 312
+        Caption = 'Projekt importieren...'
+        OnClick = ImportProjectClick
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 2
+      end
+      object AddButton: TBitBtn
+        Left = 12
+        Height = 34
+        Top = 104
         Width = 96
         Caption = 'Anlegen'
         OnClick = AddItemClick
@@ -92,7 +103,7 @@ object MainForm: TMainForm
       object EditButton: TBitBtn
         Left = 120
         Height = 34
-        Top = 58
+        Top = 104
         Width = 100
         Caption = 'Bearbeiten'
         OnClick = EditItemClick
@@ -103,7 +114,7 @@ object MainForm: TMainForm
       object DeleteButton: TBitBtn
         Left = 232
         Height = 34
-        Top = 58
+        Top = 104
         Width = 92
         Caption = 'Löschen'
         OnClick = DeleteItemClick
@@ -114,7 +125,7 @@ object MainForm: TMainForm
       object Label3: TLabel
         Left = 12
         Height = 45
-        Top = 154
+        Top = 200
         Width = 310
         AutoSize = False
         Caption = 
@@ -128,7 +139,7 @@ object MainForm: TMainForm
       object SettingsButton: TBitBtn
         Left = 12
         Height = 34
-        Top = 104
+        Top = 150
         Width = 312
         Caption = 'Einstellungen'
         OnClick = SettingsClick
