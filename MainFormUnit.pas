@@ -81,6 +81,7 @@ type
     procedure RebuildDashboardLinks;
     procedure DashboardLinkClick(Sender: TObject);
     procedure FormKeyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure AboutLinkClick(Sender: TObject);
     procedure NavigateChapter(ADelta: Integer);
     procedure NavigateToNextWithStatus(AProblemOnly: Boolean);
     function EnsureUniqueRelativeFileName(const ARelative: string): string;
@@ -197,7 +198,7 @@ uses
   LCLIntf, LCLType, FileUtil, Process, Clipbrd, StrUtils, Math, DateUtils, Zipper,
   ProjectStore, ProjectDialogUnit, ElementDialogUnit, DocumentWorkflow,
   DocxPreview, SettingsStore, SettingsDialogUnit, FirstRunWizardUnit,
-  ImportProjectDialogUnit;
+  ImportProjectDialogUnit, AboutDialogUnit;
 
 function NormalizeStoredPathForCompare(const APath: string): string;
 begin
@@ -264,6 +265,19 @@ begin
   ExportButton.Caption := 'Export ▼';
   WordButton.Visible := True;
   LibreButton.Visible := True;
+
+  // Über-Dialog (Version, Lizenzen, Icon-Attribution)
+  with TLabel.Create(Self) do
+  begin
+    Parent := HeaderPanel;
+    Caption := 'Über';
+    Anchors := [akTop, akRight];
+    Left := HeaderPanel.ClientWidth - 50;
+    Top := 12;
+    Cursor := crHandPoint;
+    Font.Color := clGrayText;
+    OnClick := @AboutLinkClick;
+  end;
 
   // Tastaturnavigation: Alt+←/→ Kapitel, Alt+O nächstes offenes, Alt+P nächstes Problem
   KeyPreview := True;
@@ -1122,6 +1136,11 @@ begin
   end
   else if FStatusCounts[STATUS_FINAL_INDEX] > 0 then
     FNextStepText := 'Alle Kapitel final — bereit für den Export.';
+end;
+
+procedure TMainForm.AboutLinkClick(Sender: TObject);
+begin
+  ShowAboutDialog;
 end;
 
 procedure TMainForm.NavigateChapter(ADelta: Integer);

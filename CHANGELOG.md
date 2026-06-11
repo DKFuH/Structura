@@ -15,6 +15,8 @@ Versioning: [Semantic Versioning](https://semver.org/)
 - Problem chapters and recently edited chapters listed by name on the dashboard — click to jump straight to the chapter
 - Chapter view shows the number of open checklist tasks from its notes
 - Keyboard navigation: Alt+Left/Right switches chapters, Alt+O jumps to the next non-final chapter, Alt+P to the next problem chapter (wraps around)
+- Colored button icons from Streamline Ultimate Color (CC BY 4.0) replace the old two-color BMP glyphs
+- About dialog ("Über" link in the sidebar header): version, MIT license, repository link, and icon attribution
 
 ---
 
