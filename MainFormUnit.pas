@@ -295,18 +295,19 @@ begin
   FBackLabel := TLabel.Create(Self);
   FBackLabel.Parent := ChapterPanel;
   FBackLabel.Left := 24;
-  FBackLabel.Top := 2;
+  FBackLabel.Top := 12;
   FBackLabel.Caption := '← Projektübersicht';
   FBackLabel.Cursor := crHandPoint;
   FBackLabel.Font.Color := $006B3D1E;
+  FBackLabel.Font.Height := -17;
   FBackLabel.OnClick := @BackToOverviewClick;
 
   // Dezenter Hinweis auf die Tastaturnavigation
   with TLabel.Create(Self) do
   begin
     Parent := ChapterPanel;
-    Left := 180;
-    Top := 2;
+    Left := 240;
+    Top := 16;
     Caption := 'Alt+←/→ Kapitel wechseln · Alt+O nächstes offenes · Alt+P nächstes Problem';
     Font.Color := clGrayText;
   end;
