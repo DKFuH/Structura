@@ -312,11 +312,9 @@ begin
   WordButton.Visible := True;
   LibreButton.Visible := True;
 
-  // Aktionsleiste als einheitliches, farblich abgesetztes „Menüband":
-  // gleiche Buttonbreite, ruhiger Sandton hinter der Reihe.
-  ChapterActionPanel.Color := TColor($00F2EEE7);
-  ChapterActionPanel.ParentColor := False;
-  ChapterActionPanel.ParentBackground := False;
+  // Aktionsleiste: vier gleich breite Buttons, kein Hintergrund (transparent).
+  ChapterActionPanel.ParentColor := True;
+  ChapterActionPanel.ParentBackground := True;
   OpenChapterButton.Width := 132;
   WordButton.Width := 132;
   LibreButton.Width := 132;
