@@ -54,11 +54,14 @@ type
     FTaskList: TCheckListBox;
     FTaskEdit: TEdit;
     FTaskAddButton: TButton;
+    FTaskHint: TLabel;
+    FNotesHint: TLabel;
     FTaskLineIndex: array of Integer;
     procedure ConfigureUi;
     procedure LayoutChapterView(Sender: TObject);
     procedure RefreshChapterTasks;
     procedure UpdateChapterTaskCount;
+    procedure UpdateNotesHint;
     procedure TaskListClickCheck(Sender: TObject);
     procedure AddChapterTaskClick(Sender: TObject);
     procedure TaskEditKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -367,6 +370,24 @@ begin
   FTaskAddButton.Parent := ChapterPanel;
   FTaskAddButton.Caption := '+';
   FTaskAddButton.OnClick := @AddChapterTaskClick;
+
+  // Erklärte Leerzustände statt leerer Kästen
+  FTaskHint := TLabel.Create(Self);
+  FTaskHint.Parent := ChapterPanel;
+  FTaskHint.Caption := 'Keine offenen Aufgaben.';
+  FTaskHint.Font.Color := clGrayText;
+  FTaskHint.Visible := False;
+
+  FNotesHint := TLabel.Create(Self);
+  FNotesHint.Parent := ChapterPanel;
+  FNotesHint.Caption := 'Notizen zu diesem Kapitel – Gedanken, offene Fragen, Überarbeitungshinweise …';
+  FNotesHint.Font.Color := clGrayText;
+  FNotesHint.WordWrap := True;
+  FNotesHint.AutoSize := False;
+  FNotesHint.Visible := False;
+
+  // Meta-Zeile ruhig (grau)
+  ChapterMetaLabel.Font.Color := clGrayText;
 
   // Größenabhängiges Layout der Kapitelansicht
   ChapterPanel.OnResize := @LayoutChapterView;
@@ -1016,7 +1037,6 @@ procedure TMainForm.RefreshChapterView;
 var
   Item: TStructuraItem;
   FileName: string;
-  Meta: TStringList;
   Sequence: Integer;
   ComboIndex: Integer;
 begin
@@ -1024,17 +1044,14 @@ begin
   if not Assigned(Item) then
     Exit;
 
-  Meta := TStringList.Create;
-  try
-    if Item.ItemType = sitChapter then
-    begin
+  if Item.ItemType = sitChapter then
+  begin
       Sequence := ChapterSequenceForItem(Item);
       FileName := AbsoluteItemFileName(Item);
       ChapterHeadingLabel.Caption := Format('%s  %s', [FormatChapterNumber(Sequence), Item.Title]);
-      Meta.Add('Datei: ' + Item.FileName);
-      Meta.Add('Geändert: ' + FileModifiedText(FileName));
-      Meta.Add('Wortzahl: ' + IntToStr(ChapterWordCount(Item)));
-      ChapterMetaLabel.Caption := Meta.Text;
+      // Ruhige Meta-Zeile statt Dateimanager-Block: Status · Wörter · geändert
+      ChapterMetaLabel.Caption := Format('%s · %d Wörter · geändert: %s',
+        [Item.Status, ChapterWordCount(Item), FileModifiedText(FileName)]);
 
       FCurrentPreviewText := TDocxPreview.LoadPreviewText(FileName);
       FUpdatingUi := True;
@@ -1065,6 +1082,7 @@ begin
       FTaskEdit.Visible := True;
       FTaskAddButton.Visible := True;
       LayoutChapterView(nil);
+      UpdateNotesHint;
     end
     else
     begin
@@ -1072,6 +1090,8 @@ begin
       FTaskList.Visible := False;
       FTaskEdit.Visible := False;
       FTaskAddButton.Visible := False;
+      if Assigned(FTaskHint) then FTaskHint.Visible := False;
+      if Assigned(FNotesHint) then FNotesHint.Visible := False;
       ChapterHeadingLabel.Caption := 'Trenner: ' + Item.Title;
       ChapterMetaLabel.Caption := 'Dieser Eintrag gliedert das Buch in Teile und besitzt keine Kapiteldatei.';
       FCurrentPreviewText := '';
@@ -1090,9 +1110,6 @@ begin
       PreviewMemo.Enabled := False;
       NotesLabel.Caption := 'Keine Notizen für Trenner';
       PreviewLabel.Caption := 'Keine Vorschau';
-    end;
-  finally
-    Meta.Free;
   end;
 
   RefreshActionButtons;
@@ -1751,6 +1768,8 @@ begin
   // Linke Spalte: Aufgaben oben, Notizen darunter
   FTaskLabel.SetBounds(LeftX, RowTop, ColW, 15);
   FTaskList.SetBounds(LeftX, ColTop, ColW, TaskListH);
+  if Assigned(FTaskHint) then
+    FTaskHint.SetBounds(LeftX + 6, ColTop + 6, ColW - 12, 18);
   InputY := ColTop + TaskListH + 6;
   FTaskAddButton.SetBounds(LeftX + ColW - 36, InputY, 36, InputH);
   FTaskEdit.SetBounds(LeftX, InputY, ColW - 36 - 6, InputH);
@@ -1766,6 +1785,8 @@ begin
   NotesMemo.SetBounds(LeftX, NotesMemoY, ColW, NotesMemoH);
   if Assigned(FNotesHtmlPanel) then
     FNotesHtmlPanel.SetBounds(LeftX, NotesMemoY, ColW, NotesMemoH);
+  if Assigned(FNotesHint) then
+    FNotesHint.SetBounds(LeftX + 6, NotesMemoY + 6, ColW - 12, 32);
 
   // Rechte Spalte: Textvorschau über die volle Höhe
   PreviewLabel.SetBounds(RightX, RowTop, ColW, 15);
@@ -1831,6 +1852,15 @@ begin
   else
     FTaskLabel.Caption := Format('Offene Aufgaben (%d von %d)',
       [Open, FTaskList.Items.Count]);
+  if Assigned(FTaskHint) then
+    FTaskHint.Visible := FTaskList.Visible and (FTaskList.Items.Count = 0);
+end;
+
+procedure TMainForm.UpdateNotesHint;
+begin
+  if Assigned(FNotesHint) then
+    FNotesHint.Visible := NotesMemo.Visible and not FNotesPreviewActive and
+      (Trim(NotesMemo.Text) = '');
 end;
 
 procedure TMainForm.TaskListClickCheck(Sender: TObject);
@@ -3544,6 +3574,7 @@ end;
 
 procedure TMainForm.NotesChanged(Sender: TObject);
 begin
+  UpdateNotesHint;
   if FUpdatingUi then
     Exit;
   PersistChapterNotes;
