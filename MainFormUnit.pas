@@ -28,6 +28,8 @@ type
     FBackLabel: TLabel;
     FProjectBackLabel: TLabel;
     FProjectExportLabel: TLabel;
+    FContinueLabel: TLabel;
+    FContinueIndex: Integer;
     FAppMenu: TPopupMenu;
     FAppMenuImage: TImage;
     FWelcomeImage: TImage;
@@ -98,6 +100,8 @@ type
     procedure DashboardPaint(Sender: TObject);
     function CountOpenTasksInNotes(const AFileName: string): Integer;
     function ChapterStaleDays(AItem: TStructuraItem): Integer;
+    function MostRecentlyEditedChapter: Integer;
+    procedure ContinueClick(Sender: TObject);
     procedure ClearDashboardLinks;
     procedure RebuildDashboardLinks;
     procedure DashboardLinkClick(Sender: TObject);
@@ -405,6 +409,18 @@ begin
   FProjectExportLabel.Font.Style := [fsBold];
   FProjectExportLabel.Visible := False;
   FProjectExportLabel.OnClick := @ProjectExportClick;
+
+  // „Weiterarbeiten" — zuletzt bearbeitetes Kapitel, ganz oben in der Übersicht
+  FContinueIndex := -1;
+  FContinueLabel := TLabel.Create(Self);
+  FContinueLabel.Parent := ProjectPanel;
+  FContinueLabel.Left := 316;
+  FContinueLabel.Top := 6;
+  FContinueLabel.Cursor := crHandPoint;
+  FContinueLabel.Font.Color := TColor($006B3D1E);
+  FContinueLabel.Font.Style := [fsBold];
+  FContinueLabel.Visible := False;
+  FContinueLabel.OnClick := @ContinueClick;
 
   // Begrüßungsbild für die leere Startansicht (noch keine Projekte vorhanden)
   FWelcomeImage := TImage.Create(Self);
@@ -828,6 +844,8 @@ begin
       FProjectBackLabel.Visible := False;
     if Assigned(FProjectExportLabel) then
       FProjectExportLabel.Visible := False;
+    if Assigned(FContinueLabel) then
+      FContinueLabel.Visible := False;
     ClearDashboardLinks;
     RebuildProjectCards;
     // Eule nur zeigen, solange es noch keine Projektkacheln gibt
@@ -845,6 +863,19 @@ begin
   begin
     FProjectExportLabel.Left := ProjectPanel.ClientWidth - 90;
     FProjectExportLabel.Visible := True;
+  end;
+  if Assigned(FContinueLabel) then
+  begin
+    FContinueIndex := MostRecentlyEditedChapter;
+    if FContinueIndex >= 0 then
+    begin
+      FContinueLabel.Caption := Format('▶ Weiterarbeiten: %s  %s',
+        [FormatChapterNumber(ChapterSequenceForIndex(FContinueIndex)),
+         FProject[FContinueIndex].Title]);
+      FContinueLabel.Visible := True;
+    end
+    else
+      FContinueLabel.Visible := False;
   end;
   ComputeDashboardData;
   if Assigned(FDashboardBox) then
@@ -1205,6 +1236,40 @@ begin
   FileName := AbsoluteItemFileName(AItem);
   if FileExists(FileName) and FileAge(FileName, FileDate) then
     Result := Trunc(Now) - Trunc(FileDate);
+end;
+
+// Index des zuletzt geänderten Kapitels (jüngste Kapiteldatei), oder -1.
+function TMainForm.MostRecentlyEditedChapter: Integer;
+var
+  I: Integer;
+  Item: TStructuraItem;
+  FileName: string;
+  FileDate, Newest: TDateTime;
+begin
+  Result := -1;
+  Newest := 0;
+  if not Assigned(FProject) then
+    Exit;
+  for I := 0 to FProject.Count - 1 do
+  begin
+    Item := FProject[I];
+    if Item.ItemType <> sitChapter then
+      Continue;
+    FileName := AbsoluteItemFileName(Item);
+    if FileExists(FileName) and FileAge(FileName, FileDate) then
+      if (Result < 0) or (FileDate > Newest) then
+      begin
+        Newest := FileDate;
+        Result := I;
+      end;
+  end;
+end;
+
+procedure TMainForm.ContinueClick(Sender: TObject);
+begin
+  if (FContinueIndex >= 0) and Assigned(FProject) and
+     (FContinueIndex < FProject.Count) then
+    SelectItem(FContinueIndex);
 end;
 
 function TMainForm.CountOpenTasksInNotes(const AFileName: string): Integer;

@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- "Weiterarbeiten": the project overview now shows the most recently edited chapter at the top ("▶ Weiterarbeiten: 08 …"); one click continues right where you left off
+
+---
+
 ## [0.7.0] — 2026-06-12
 
 ### Added
