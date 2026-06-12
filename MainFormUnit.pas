@@ -2938,6 +2938,33 @@ begin
   FDeferredProjectFolder := '';
 end;
 
+// Größte Schriftgröße (Punkt), bei der der Text einzeilig in AMaxWidth passt;
+// passt er selbst bei AMinPt nicht, wird AMinPt zurückgegeben (Label umbricht).
+function FitFontSizeToWidth(const AText: string; AMaxWidth, AMaxPt, AMinPt: Integer;
+  ABold: Boolean): Integer;
+var
+  Bmp: TBitmap;
+  Pt: Integer;
+begin
+  Result := AMaxPt;
+  if Trim(AText) = '' then
+    Exit;
+  Bmp := TBitmap.Create;
+  try
+    if ABold then
+      Bmp.Canvas.Font.Style := [fsBold];
+    for Pt := AMaxPt downto AMinPt do
+    begin
+      Bmp.Canvas.Font.Size := Pt;
+      if Bmp.Canvas.TextWidth(AText) <= AMaxWidth then
+        Exit(Pt);
+    end;
+    Result := AMinPt;
+  finally
+    Bmp.Free;
+  end;
+end;
+
 procedure TMainForm.RebuildProjectCards;
 var
   I: Integer;
@@ -3075,17 +3102,18 @@ begin
         end;
     end;
 
-    // Titel
+    // Titel — Höhe für bis zu zwei Zeilen, Schriftgröße passt sich der Länge an
     TitleLbl := TLabel.Create(Card);
     TitleLbl.Parent := Card;
     TitleLbl.Left := 68;
     TitleLbl.Top := 8;
     TitleLbl.Width := 204;
+    TitleLbl.Height := 38;
     TitleLbl.AutoSize := False;
     TitleLbl.WordWrap := True;
-    TitleLbl.Caption := Summary.Title;
     TitleLbl.Font.Style := [fsBold];
-    TitleLbl.Font.Size := 9;
+    TitleLbl.Font.Size := FitFontSizeToWidth(Summary.Title, 200, 13, 8, True);
+    TitleLbl.Caption := Summary.Title;
     TitleLbl.Cursor := crHandPoint;
     TitleLbl.OnClick := @ProjectCardClick;
     TitleLbl.Hint := FolderPaths[I];
@@ -3094,11 +3122,11 @@ begin
     SubLbl := TLabel.Create(Card);
     SubLbl.Parent := Card;
     SubLbl.Left := 68;
-    SubLbl.Top := 34;
+    SubLbl.Top := 48;
     SubLbl.Width := 204;
-    SubLbl.Height := 28;
+    SubLbl.Height := 16;
     SubLbl.AutoSize := False;
-    SubLbl.WordWrap := True;
+    SubLbl.WordWrap := False;
     SubLbl.Caption := Summary.Subtitle;
     SubLbl.Font.Color := $00666666;
     SubLbl.Font.Size := 8;
@@ -3111,7 +3139,7 @@ begin
     InfoLbl.Parent := Card;
     InfoLbl.Left := 68;
     InfoLbl.Top := 68;
-    InfoLbl.Caption := IntToStr(Summary.ChapterCount) + ' Kapitel';
+    InfoLbl.Caption := Format('%d Kapitel', [Summary.ChapterCount]);
     InfoLbl.Font.Color := $00999999;
     InfoLbl.Font.Size := 8;
     InfoLbl.Cursor := crHandPoint;

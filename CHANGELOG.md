@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- Project cards (start screen) showed cover and chapter count but no title: the title label had no height and overlapped the subtitle. Titles now render in their own area, and the font size auto-shrinks to fit the title length (short titles large, long titles smaller, wrapping to two lines only when needed)
+
+---
+
 ## [0.8.1] — 2026-06-12
 
 ### Fixed
