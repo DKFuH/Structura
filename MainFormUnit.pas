@@ -294,7 +294,7 @@ begin
   WindowState := wsMaximized;
   ProjectPanel.Visible := True;
   ChapterPanel.Visible := False;
-  ChapterActionPanel.AutoWrap := True;
+  ChapterActionPanel.AutoWrap := False;
   ChapterActionPanel.FlowStyle := fsLeftRightTopBottom;
   StatusBar.SimplePanel := True;
   WordButton.Visible := False;
@@ -311,6 +311,24 @@ begin
   ExportButton.Caption := 'Export ▾';
   WordButton.Visible := True;
   LibreButton.Visible := True;
+
+  // Aktionsleiste als einheitliches, farblich abgesetztes „Menüband":
+  // gleiche Buttonbreite, ruhiger Sandton hinter der Reihe.
+  ChapterActionPanel.Color := TColor($00F2EEE7);
+  ChapterActionPanel.ParentColor := False;
+  ChapterActionPanel.ParentBackground := False;
+  OpenChapterButton.Width := 132;
+  WordButton.Width := 132;
+  LibreButton.Width := 132;
+  ExportButton.Width := 132;
+  OpenChapterButton.Height := 34;
+  WordButton.Height := 34;
+  LibreButton.Height := 34;
+  ExportButton.Height := 34;
+  OpenChapterButton.BorderSpacing.Around := 6;
+  WordButton.BorderSpacing.Around := 6;
+  LibreButton.BorderSpacing.Around := 6;
+  ExportButton.BorderSpacing.Around := 6;
 
   // Markdown-Vorschau für Kapitelnotizen: HTML-Panel deckungsgleich über dem
   // Memo, Umschalter neben der Notizen-Überschrift
@@ -1681,9 +1699,10 @@ begin
   RightX := Margin + ColW + Gap;
   Bottom := H - Margin;
 
-  // Kopfbereich (volle Breite)
+  // Kopfbereich
   ChapterMetaLabel.Width := W - 2 * Margin;
-  ChapterActionPanel.Width := W - 2 * Margin;
+  // Aktionsband umschließt die vier gleich breiten Buttons (kein leerer Rand)
+  ChapterActionPanel.Width := 4 * 132 + 4 * 12 + 12;
 
   // Linke Spalte: Aufgaben oben, Notizen darunter
   FTaskLabel.SetBounds(LeftX, RowTop, ColW, 15);
