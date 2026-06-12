@@ -12,6 +12,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 ### Added
 
 - "Weiterarbeiten": the project overview now shows the most recently edited chapter at the top ("▶ Weiterarbeiten: 08 …"); one click continues right where you left off
+- Project milestones on the overview (below the cover): draft complete, half reviewed, no open tasks, all chapters final, export created — achieved ones marked ✓, open ones ○, as quiet motivation
 
 ---
 

@@ -30,6 +30,7 @@ type
     FProjectExportLabel: TLabel;
     FContinueLabel: TLabel;
     FContinueIndex: Integer;
+    FMilestonesLabel: TLabel;
     FAppMenu: TPopupMenu;
     FAppMenuImage: TImage;
     FWelcomeImage: TImage;
@@ -102,6 +103,7 @@ type
     function ChapterStaleDays(AItem: TStructuraItem): Integer;
     function MostRecentlyEditedChapter: Integer;
     procedure ContinueClick(Sender: TObject);
+    function BuildMilestonesText: string;
     procedure ClearDashboardLinks;
     procedure RebuildDashboardLinks;
     procedure DashboardLinkClick(Sender: TObject);
@@ -421,6 +423,14 @@ begin
   FContinueLabel.Font.Style := [fsBold];
   FContinueLabel.Visible := False;
   FContinueLabel.OnClick := @ContinueClick;
+
+  // Meilensteine im freien Bereich unter dem Cover (linke Spalte)
+  FMilestonesLabel := TLabel.Create(Self);
+  FMilestonesLabel.Parent := ProjectPanel;
+  FMilestonesLabel.SetBounds(24, 400, 268, 130);
+  FMilestonesLabel.AutoSize := False;
+  FMilestonesLabel.WordWrap := True;
+  FMilestonesLabel.Visible := False;
 
   // Begrüßungsbild für die leere Startansicht (noch keine Projekte vorhanden)
   FWelcomeImage := TImage.Create(Self);
@@ -846,6 +856,8 @@ begin
       FProjectExportLabel.Visible := False;
     if Assigned(FContinueLabel) then
       FContinueLabel.Visible := False;
+    if Assigned(FMilestonesLabel) then
+      FMilestonesLabel.Visible := False;
     ClearDashboardLinks;
     RebuildProjectCards;
     // Eule nur zeigen, solange es noch keine Projektkacheln gibt
@@ -884,6 +896,11 @@ begin
     FDashboardBox.Invalidate;
   end;
   RebuildDashboardLinks;
+  if Assigned(FMilestonesLabel) then
+  begin
+    FMilestonesLabel.Caption := BuildMilestonesText;
+    FMilestonesLabel.Visible := Trim(FMilestonesLabel.Caption) <> '';
+  end;
 
   CoverImage.Visible := True;
   ProjectNotesLabel.Visible := True;
@@ -1270,6 +1287,43 @@ begin
   if (FContinueIndex >= 0) and Assigned(FProject) and
      (FContinueIndex < FProject.Count) then
     SelectItem(FContinueIndex);
+end;
+
+// Automatisch erkannte Projektmeilensteine (nutzt die zuvor in
+// ComputeDashboardData gefüllten Statuszähler). Erreichte mit ✓, offene mit ○.
+function TMainForm.BuildMilestonesText: string;
+var
+  Total, Reviewed, I: Integer;
+
+  function Line(ADone: Boolean; const AText: string): string;
+  begin
+    if ADone then
+      Result := '✓  ' + AText
+    else
+      Result := '○  ' + AText;
+    Result := Result + LineEnding;
+  end;
+
+begin
+  Result := '';
+  if not Assigned(FProject) then
+    Exit;
+  Total := 0;
+  for I := Low(FStatusCounts) to High(FStatusCounts) do
+    Inc(Total, FStatusCounts[I]);
+  if Total = 0 then
+    Exit;
+  // „geprüft" = sprachlich/fachlich geprüft oder final
+  Reviewed := FStatusCounts[3] + FStatusCounts[4] + FStatusCounts[STATUS_FINAL_INDEX];
+
+  Result := 'Meilensteine' + LineEnding;
+  Result := Result + Line(FStatusCounts[0] = 0, 'Rohfassung abgeschlossen');
+  Result := Result + Line(Reviewed * 2 >= Total, 'Hälfte geprüft');
+  Result := Result + Line(FOpenTaskCount = 0, 'Keine offenen Aufgaben');
+  Result := Result + Line(FStatusCounts[STATUS_FINAL_INDEX] = Total, 'Alle Kapitel final');
+  Result := Result + Line(
+    FileExists(IncludeTrailingPathDelimiter(FProject.FolderPath) +
+      'export' + PathDelim + 'master.docx'), 'Export erstellt');
 end;
 
 function TMainForm.CountOpenTasksInNotes(const AFileName: string): Integer;
