@@ -431,7 +431,7 @@ begin
   // Meilensteine im freien Bereich unter dem Cover (linke Spalte)
   FMilestonesLabel := TLabel.Create(Self);
   FMilestonesLabel.Parent := ProjectPanel;
-  FMilestonesLabel.SetBounds(24, 400, 268, 130);
+  FMilestonesLabel.SetBounds(24, 416, 268, 112);
   FMilestonesLabel.AutoSize := False;
   FMilestonesLabel.WordWrap := True;
   FMilestonesLabel.Visible := False;
@@ -2098,8 +2098,9 @@ begin
     end;
   end;
 
-  // Einstieg in die Review-Tabelle, links unter dem Cover
-  with AddLinkLabel(24, LinksTop, 'Review-Ansicht öffnen →', -1) do
+  // Einstieg in die Review-Tabelle, links direkt unter dem Cover
+  // (Meilensteine sitzen darunter ab y=416)
+  with AddLinkLabel(24, 392, 'Review-Ansicht öffnen →', -1) do
   begin
     Cursor := crHandPoint;
     Font.Color := TColor($00B05A1E);
