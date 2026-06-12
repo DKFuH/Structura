@@ -31,6 +31,9 @@ type
     FContinueLabel: TLabel;
     FContinueIndex: Integer;
     FMilestonesLabel: TLabel;
+    FSessionTasksDone: Integer;
+    FSessionStatusChanges: Integer;
+    FSessionLastStatus: string;
     FAppMenu: TPopupMenu;
     FAppMenuImage: TImage;
     FWelcomeImage: TImage;
@@ -104,6 +107,7 @@ type
     function MostRecentlyEditedChapter: Integer;
     procedure ContinueClick(Sender: TObject);
     function BuildMilestonesText: string;
+    function SessionSummaryText: string;
     procedure ClearDashboardLinks;
     procedure RebuildDashboardLinks;
     procedure DashboardLinkClick(Sender: TObject);
@@ -744,6 +748,10 @@ begin
     EnsureDailyZipBackup(True);
   FreeAndNil(FProject);
   FProject := AProject;
+  // Neue, ruhige Sitzung beginnen
+  FSessionTasksDone := 0;
+  FSessionStatusChanges := 0;
+  FSessionLastStatus := '';
   if Assigned(FProject) then
     FLastProjectFolder := FProject.FolderPath;
   FSelectedIndex := -1;
@@ -941,6 +949,10 @@ begin
   finally
     FUpdatingUi := False;
   end;
+
+  // Ruhige Sitzungsrückmeldung in der Statusleiste, sobald etwas entstanden ist
+  if SessionSummaryText <> '' then
+    UpdateStatus(SessionSummaryText);
 end;
 
 procedure TMainForm.RefreshChapterView;
@@ -1324,6 +1336,30 @@ begin
   Result := Result + Line(
     FileExists(IncludeTrailingPathDelimiter(FProject.FolderPath) +
       'export' + PathDelim + 'master.docx'), 'Export erstellt');
+end;
+
+// Ruhige Sitzungsrückmeldung — kein Punktestand, nur was entstanden ist.
+function TMainForm.SessionSummaryText: string;
+var
+  Parts: string;
+begin
+  Result := '';
+  Parts := '';
+  if FSessionTasksDone > 0 then
+  begin
+    if FSessionTasksDone = 1 then
+      Parts := '1 Aufgabe abgeschlossen'
+    else
+      Parts := Format('%d Aufgaben abgeschlossen', [FSessionTasksDone]);
+  end;
+  if FSessionLastStatus <> '' then
+  begin
+    if Parts <> '' then
+      Parts := Parts + '  ·  ';
+    Parts := Parts + FSessionLastStatus + ' geprüft';
+  end;
+  if Parts <> '' then
+    Result := 'Diese Sitzung: ' + Parts;
 end;
 
 function TMainForm.CountOpenTasksInNotes(const AFileName: string): Integer;
@@ -1755,7 +1791,10 @@ begin
   if Length(Trimmed) >= 5 then
   begin
     if FTaskList.Checked[Idx] then
-      Trimmed[BoxPos] := 'x'
+    begin
+      Trimmed[BoxPos] := 'x';
+      Inc(FSessionTasksDone);
+    end
     else
       Trimmed[BoxPos] := ' ';
     FUpdatingUi := True;
@@ -2390,6 +2429,8 @@ end;
 // Vor dem Schließen/Wechseln: Notizen sichern und das heutige Tagesbackup
 // auf den aktuellen Stand bringen.
 procedure TMainForm.BackupCurrentProjectOnClose;
+var
+  Summary: string;
 begin
   if not Assigned(FProject) then
     Exit;
@@ -2397,6 +2438,9 @@ begin
   PersistProjectNotes;
   SaveProject;
   EnsureDailyZipBackup(True);
+  Summary := SessionSummaryText;
+  if Summary <> '' then
+    UpdateStatus(Summary + '  ·  Bis bald.');
 end;
 
 function TMainForm.RenameChapterFile(AItem: TStructuraItem; AListIndex: Integer): Boolean;
@@ -3499,6 +3543,13 @@ begin
   Item := CurrentChapter;
   if not Assigned(Item) then
     Exit;
+  if not SameText(Item.Status, ChapterStatusCombo.Text) then
+  begin
+    Inc(FSessionStatusChanges);
+    FSessionLastStatus := Format('Kapitel %s „%s"',
+      [FormatChapterNumber(ChapterSequenceForItem(Item)),
+       ChapterStatusCombo.Text]);
+  end;
   Item.Status := ChapterStatusCombo.Text;
   SaveProject;
   RefreshItemList;

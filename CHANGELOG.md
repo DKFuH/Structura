@@ -13,6 +13,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 - "Weiterarbeiten": the project overview now shows the most recently edited chapter at the top ("▶ Weiterarbeiten: 08 …"); one click continues right where you left off
 - Project milestones on the overview (below the cover): draft complete, half reviewed, no open tasks, all chapters final, export created — achieved ones marked ✓, open ones ○, as quiet motivation
+- Quiet session feedback (zen, no scoreboard): once you complete tasks or set a chapter status during a session, the status bar calmly notes "Diese Sitzung: 2 Aufgaben abgeschlossen · Kapitel 05 … geprüft", and a soft "Bis bald." on close. Resets per project/session
 
 ---
 
