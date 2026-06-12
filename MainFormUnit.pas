@@ -225,6 +225,7 @@ type
     procedure TextMakerClick(Sender: TObject);
     procedure CopyTextClick(Sender: TObject);
     procedure SettingsClick(Sender: TObject);
+    procedure EditProjectPropsClick(Sender: TObject);
     procedure ExportClick(Sender: TObject);
     procedure OpenMenuClick(Sender: TObject);
     procedure ReviewMenuClick(Sender: TObject);
@@ -248,7 +249,7 @@ uses
   ProjectStore, ProjectDialogUnit, ElementDialogUnit, DocumentWorkflow,
   DocxPreview, SettingsStore, SettingsDialogUnit, FirstRunWizardUnit,
   ImportProjectDialogUnit, AboutDialogUnit, ReviewDialogUnit, MarkdownPreview,
-  ExportDialogUnit, SearchDialogUnit;
+  ExportDialogUnit, SearchDialogUnit, ProjectPropsDialogUnit;
 
 function NormalizeStoredPathForCompare(const APath: string): string;
 begin
@@ -395,6 +396,7 @@ begin
   // Header-Menü für seltene/globale Aktionen (Einstellungen, Hilfe, Über).
   // Häufige Workflow-Aktionen bleiben als sichtbare Buttons.
   FAppMenu := TPopupMenu.Create(Self);
+  AddAppMenuItem('Projekteigenschaften bearbeiten', @EditProjectPropsClick);
   AddAppMenuItem('Projektsuche  (Strg+F)', @ProjectSearchClick);
   AddAppMenuItem('Sicherungen öffnen', @OpenBackupsClick);
   AddAppMenuItem('-', nil);
@@ -3663,6 +3665,44 @@ procedure TMainForm.CopyTextClick(Sender: TObject);
 begin
   Clipboard.AsText := FCurrentPreviewText;
   UpdateStatus('Kapiteltext in die Zwischenablage kopiert.');
+end;
+
+procedure TMainForm.EditProjectPropsClick(Sender: TObject);
+var
+  Props: TProjectProps;
+  CoverRel, CoverTarget: string;
+begin
+  if not Assigned(FProject) then
+  begin
+    MessageDlg('Kein Projekt', 'Bitte zuerst ein Projekt öffnen.',
+      mtInformation, [mbOK], 0);
+    Exit;
+  end;
+  Props := EditProjectProperties(FProject.Title, FProject.Subtitle,
+    FProject.Author, FProject.CoverImagePath);
+  if not Props.Confirmed then
+    Exit;
+
+  FProject.Title := Props.Title;
+  FProject.Subtitle := Props.Subtitle;
+  FProject.Author := Props.Author;
+
+  if Props.RemoveCover then
+    FProject.CoverImagePath := ''
+  else if Props.NewCoverFile <> '' then
+  begin
+    CoverRel := 'cover' + LowerCase(ExtractFileExt(Props.NewCoverFile));
+    CoverTarget := IncludeTrailingPathDelimiter(FProject.FolderPath) + CoverRel;
+    if CopyFile(Props.NewCoverFile, CoverTarget, [cffOverwriteFile]) then
+      FProject.CoverImagePath := CoverRel
+    else
+      MessageDlg('Cover', 'Das Coverbild konnte nicht kopiert werden.',
+        mtWarning, [mbOK], 0);
+  end;
+
+  SaveProject;
+  RefreshAll;
+  UpdateStatus('Projekteigenschaften gespeichert.');
 end;
 
 procedure TMainForm.SettingsClick(Sender: TObject);

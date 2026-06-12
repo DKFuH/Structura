@@ -165,7 +165,9 @@ begin
       Result.Title := Root.Get('title', '');
       Result.Subtitle := Root.Get('subtitle', '');
       Result.Author := Root.Get('author', '');
-      Result.CoverImagePath := Root.Get('coverImagePath', '');
+      // Speichert wird unter 'coverImage'; alte/abweichende Dateien mit
+      // 'coverImagePath' als Rückfall lesen.
+      Result.CoverImagePath := Root.Get('coverImage', Root.Get('coverImagePath', ''));
       Items := Root.Find('items');
       if Items is TJSONArray then
       begin

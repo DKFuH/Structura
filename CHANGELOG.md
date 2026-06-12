@@ -7,6 +7,18 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- Project cover always showed the placeholder: the cover path was saved under the JSON key `coverImage` but loaded from `coverImagePath`, so it never came back. Loading now reads `coverImage` (with `coverImagePath` as fallback for older files)
+
+### Added
+
+- "Projekteigenschaften bearbeiten" (header menu): edit a project's title, subtitle, author, and cover after creation — choose a new cover image, keep, or remove it. This also makes up for details the folder import can't capture (subtitle, cover)
+
+---
+
 ## [0.8.0] — 2026-06-12
 
 ### Added
