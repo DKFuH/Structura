@@ -63,12 +63,35 @@ A view built for the revision phase, not the drafting phase.
 
 Not "do more", but: in a real manuscript, find the spot to continue faster. **Hard rule: the sidebar stays a pure table of contents — chapters and parts only. No filters, no search results, no review logic there.** Everything analytical lives in its own modal/dialog.
 
-**Planned:**
+**Done (released as 0.7.0):**
 - global project search as a modal (Ctrl+F): chapter titles, dividers, notes, tasks, extracted DOCX preview text; results list with jump-to-chapter
 - review dialog with filters (problem chapters, open tasks, non-final, stale) — filters live only inside that dialog
-- review queue: suggest the next chapter (problems → open tasks → drafts → stale → non-final)
 - backup access from the app menu (open the daily backup folder, show last backup)
+- daily backup also refreshed on close/switch
 - gentle protection prompts for chapters marked "Final" before rename/delete/move
+
+## 0.7.1 — Stabilization
+
+No new features. A lot was built quickly in 0.6–0.7; harden it before opening the next block.
+
+- test global search with real projects
+- verify review filters
+- verify backup-on-close
+- test final-chapter protection
+- re-test export after 0.7 changes
+- smooth out small UI glitches
+
+## 0.8.0 — Weiterarbeiten (work flow & motivation)
+
+Not "more technology" — help start and end a work session cleanly. Open the project and immediately know where to continue.
+
+- "Continue last work": on project start, surface the last-edited chapter with a Continue button
+- "Heute weiterarbeiten" suggestions on the dashboard (open tasks, problem chapters, stale chapters) — gentle, not nagging
+- quiet daily progress (tasks done, chapters opened, export created)
+- optional session start/end with a small goal and a short summary
+- auto-detected project milestones (all chapters created, first draft complete, 50% reviewed, no open tasks, export created)
+
+Not in 0.8: cloud, AI, installer, template library, Git, own editor, more export logic.
 
 ## 1.0.0 — Ready for real book projects
 
