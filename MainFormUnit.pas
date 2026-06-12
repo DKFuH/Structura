@@ -305,10 +305,10 @@ begin
   // Einstellungen sind ins Header-Menü gewandert
   SettingsButton.Visible := False;
   CopyTextButton.Visible := False;
-  OpenChapterButton.Caption := 'Öffnen mit ▼';
-  WordButton.Caption := 'Prüfen mit ▼';
-  LibreButton.Caption := 'Kopieren ▼';
-  ExportButton.Caption := 'Export ▼';
+  OpenChapterButton.Caption := 'Öffnen ▾';
+  WordButton.Caption := 'Prüfen ▾';
+  LibreButton.Caption := 'Kopieren ▾';
+  ExportButton.Caption := 'Export ▾';
   WordButton.Visible := True;
   LibreButton.Visible := True;
 
@@ -409,7 +409,7 @@ begin
   FProjectExportLabel.Anchors := [akTop, akRight];
   FProjectExportLabel.Left := ProjectPanel.ClientWidth - 90;
   FProjectExportLabel.Top := 4;
-  FProjectExportLabel.Caption := 'Export ▼';
+  FProjectExportLabel.Caption := 'Export ▾';
   FProjectExportLabel.Cursor := crHandPoint;
   FProjectExportLabel.Font.Color := TColor($006B3D1E);
   FProjectExportLabel.Font.Style := [fsBold];
@@ -1996,7 +1996,6 @@ const
   LinksTop = 424;
   RowHeight = 20;
   ProblemLeft = 316;
-  RecentLeft = 676;
 
   function AddLinkLabel(ALeft, ATop: Integer; const ACaption: string;
     AItemIndex: Integer): TLabel;
@@ -2025,11 +2024,6 @@ const
 var
   I, Row: Integer;
   Item: TStructuraItem;
-  RecentIndices: array of Integer;
-  RecentAges: array of TDateTime;
-  FileName: string;
-  Age: TDateTime;
-  J, InsertAt: Integer;
 begin
   ClearDashboardLinks;
   if not Assigned(FProject) then
@@ -2053,50 +2047,7 @@ begin
     Inc(Row);
   end;
 
-  // Zuletzt bearbeitete Kapitel (nach Dateiänderungsdatum, neueste zuerst)
-  SetLength(RecentIndices, 0);
-  SetLength(RecentAges, 0);
-  for I := 0 to FProject.Count - 1 do
-  begin
-    Item := FProject[I];
-    if Item.ItemType <> sitChapter then
-      Continue;
-    FileName := AbsoluteItemFileName(Item);
-    if not FileExists(FileName) then
-      Continue;
-    if not FileAge(FileName, Age) then
-      Continue;
-    InsertAt := Length(RecentIndices);
-    for J := 0 to High(RecentIndices) do
-      if Age > RecentAges[J] then
-      begin
-        InsertAt := J;
-        Break;
-      end;
-    if InsertAt >= MaxEntries then
-      Continue;
-    SetLength(RecentIndices, Min(Length(RecentIndices) + 1, MaxEntries));
-    SetLength(RecentAges, Length(RecentIndices));
-    for J := High(RecentIndices) downto InsertAt + 1 do
-    begin
-      RecentIndices[J] := RecentIndices[J - 1];
-      RecentAges[J] := RecentAges[J - 1];
-    end;
-    RecentIndices[InsertAt] := I;
-    RecentAges[InsertAt] := Age;
-  end;
-
-  if Length(RecentIndices) > 0 then
-  begin
-    AddLinkLabel(RecentLeft, LinksTop, 'Zuletzt bearbeitet', -1);
-    for I := 0 to High(RecentIndices) do
-    begin
-      Item := FProject[RecentIndices[I]];
-      AddLinkLabel(RecentLeft, LinksTop + (I + 1) * RowHeight,
-        Format('%s  %s', [FormatChapterNumber(ChapterSequenceForIndex(RecentIndices[I])), Item.Title]),
-        RecentIndices[I]);
-    end;
-  end;
+  // „Zuletzt bearbeitet" entfällt — redundant zur „Weiterarbeiten"-Zeile oben.
 
   // Einstieg in die Review-Tabelle, links direkt unter dem Cover
   // (Meilensteine sitzen darunter ab y=416)
