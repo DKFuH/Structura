@@ -109,6 +109,7 @@ type
     procedure ProjectExportClick(Sender: TObject);
     procedure ProjectSearchClick(Sender: TObject);
     function ConfirmFinalChange(AItem: TStructuraItem; const AAction: string): Boolean;
+    procedure OpenBackupsClick(Sender: TObject);
     procedure ReviewLinkClick(Sender: TObject);
     procedure NotesToggleClick(Sender: TObject);
     procedure UpdateNotesPreviewState;
@@ -344,6 +345,7 @@ begin
   // Häufige Workflow-Aktionen bleiben als sichtbare Buttons.
   FAppMenu := TPopupMenu.Create(Self);
   AddAppMenuItem('Projektsuche  (Strg+F)', @ProjectSearchClick);
+  AddAppMenuItem('Sicherungen öffnen', @OpenBackupsClick);
   AddAppMenuItem('-', nil);
   AddAppMenuItem('Einstellungen', @SettingsClick);
   AddAppMenuItem('Erste Schritte (Hilfe)', @HelpClick);
@@ -1344,6 +1346,51 @@ begin
     Exit;
   RebuildExportPopupMenu;
   ShowPopupMenuBelow(FProjectExportLabel, FExportPopupMenu);
+end;
+
+procedure TMainForm.OpenBackupsClick(Sender: TObject);
+var
+  BackupRoot, DailyFolder, LastZip, Info: string;
+  Zips: TStringList;
+begin
+  if not Assigned(FProject) then
+  begin
+    UpdateStatus('Sicherungen: Bitte zuerst ein Projekt öffnen.');
+    Exit;
+  end;
+  BackupRoot := IncludeTrailingPathDelimiter(FProject.FolderPath) + 'backup';
+  DailyFolder := IncludeTrailingPathDelimiter(BackupRoot) + 'daily';
+
+  // Letzte Tagessicherung ermitteln
+  LastZip := '';
+  if DirectoryExists(DailyFolder) then
+  begin
+    Zips := TStringList.Create;
+    try
+      FindAllFiles(Zips, DailyFolder, '*.zip', False);
+      Zips.Sort;
+      if Zips.Count > 0 then
+        LastZip := ExtractFileName(Zips[Zips.Count - 1]);
+    finally
+      Zips.Free;
+    end;
+  end;
+
+  if not DirectoryExists(BackupRoot) then
+  begin
+    MessageDlg('Sicherungen',
+      'Für dieses Projekt gibt es noch keine Sicherungen.' + LineEnding +
+      'Tägliche ZIP-Sicherungen entstehen automatisch beim Öffnen und Schließen.',
+      mtInformation, [mbOK], 0);
+    Exit;
+  end;
+
+  Info := 'Tägliche ZIP-Sicherungen liegen unter backup\daily\.';
+  if LastZip <> '' then
+    Info := Info + LineEnding + 'Letzte Sicherung: ' + LastZip;
+  Info := Info + LineEnding + LineEnding + 'Sicherungsordner jetzt öffnen?';
+  if MessageDlg('Sicherungen', Info, mtConfirmation, [mbYes, mbNo], 0) = mrYes then
+    ShowInFileManager(BackupRoot);
 end;
 
 procedure TMainForm.ProjectSearchClick(Sender: TObject);
