@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- Global project search (Ctrl+F, or "Projektsuche" in the header menu): searches chapter titles, dividers, notes, open/done tasks, and extracted DOCX chapter text. Live results list (chapter · area · snippet); double-click or Enter jumps to the chapter. It is a separate modal — the sidebar stays a pure table of contents
+
+---
+
 ## [0.6.0] — 2026-06-12
 
 ### Changed

@@ -59,11 +59,25 @@ A view built for the revision phase, not the drafting phase.
 - review export for Grammarly/ChatGPT workflows (one text file per chapter)
 - structure-aware import: pick a source folder anywhere, recursive subfolder scan, subfolders become part dividers, reorder before importing; creates a new project in the project root and copies the files in (originals untouched)
 
+## 0.7.x — Find & review flow (separate work views)
+
+Not "do more", but: in a real manuscript, find the spot to continue faster. **Hard rule: the sidebar stays a pure table of contents — chapters and parts only. No filters, no search results, no review logic there.** Everything analytical lives in its own modal/dialog.
+
+**Planned:**
+- global project search as a modal (Ctrl+F): chapter titles, dividers, notes, tasks, extracted DOCX preview text; results list with jump-to-chapter
+- review dialog with filters (problem chapters, open tasks, non-final, stale) — filters live only inside that dialog
+- review queue: suggest the next chapter (problems → open tasks → drafts → stale → non-final)
+- backup access from the app menu (open the daily backup folder, show last backup)
+- gentle protection prompts for chapters marked "Final" before rename/delete/move
+
 ## 1.0.0 — Ready for real book projects
 
-- clean Windows release with SmartScreen-aware packaging
-- complete user documentation
-- stable end-to-end workflow from draft to export
+**Done:**
+- native, fully Word-compliant DOCX export (real styles, document properties)
+
+**Planned:**
+- clean Windows release with SmartScreen-aware packaging (code signing)
+- complete user documentation + screenshots
 - tested against real manuscript sizes
 
 ---

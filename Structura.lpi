@@ -29,7 +29,7 @@
       <Unit>
         <Filename Value="Structura.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="22"/>
+        <UsageCount Value="31"/>
       </Unit>
       <Unit>
         <Filename Value="MainFormUnit.pas"/>
@@ -39,31 +39,31 @@
         <ResourceBaseClass Value="Form"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="614"/>
-        <CursorPos X="3" Y="628"/>
-        <UsageCount Value="22"/>
+        <TopLine Value="613"/>
+        <CursorPos X="95" Y="634"/>
+        <UsageCount Value="31"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="StructuraTypes.pas"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="22"/>
+        <UsageCount Value="31"/>
       </Unit>
       <Unit>
         <Filename Value="ProjectStore.pas"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="22"/>
+        <UsageCount Value="31"/>
       </Unit>
       <Unit>
         <Filename Value="DocxPreview.pas"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="22"/>
+        <UsageCount Value="31"/>
       </Unit>
       <Unit>
         <Filename Value="DocumentWorkflow.pas"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="22"/>
+        <UsageCount Value="31"/>
       </Unit>
       <Unit>
         <Filename Value="ProjectDialogUnit.pas"/>
@@ -71,7 +71,7 @@
         <ComponentName Value="ProjectDialogForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UsageCount Value="22"/>
+        <UsageCount Value="31"/>
       </Unit>
       <Unit>
         <Filename Value="ElementDialogUnit.pas"/>
@@ -79,22 +79,22 @@
         <ComponentName Value="ElementDialogForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UsageCount Value="22"/>
+        <UsageCount Value="31"/>
       </Unit>
       <Unit>
         <Filename Value="OfficeDetection.pas"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="22"/>
+        <UsageCount Value="31"/>
       </Unit>
       <Unit>
         <Filename Value="AppSettings.pas"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="22"/>
+        <UsageCount Value="31"/>
       </Unit>
       <Unit>
         <Filename Value="SettingsStore.pas"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="22"/>
+        <UsageCount Value="31"/>
       </Unit>
       <Unit>
         <Filename Value="WorkflowButtonDialogUnit.pas"/>
@@ -102,7 +102,7 @@
         <ComponentName Value="WorkflowButtonDialogForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UsageCount Value="22"/>
+        <UsageCount Value="31"/>
       </Unit>
       <Unit>
         <Filename Value="SettingsDialogUnit.pas"/>
@@ -110,30 +110,42 @@
         <ComponentName Value="SettingsDialogForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UsageCount Value="22"/>
+        <UsageCount Value="31"/>
       </Unit>
       <Unit>
         <Filename Value="FirstRunWizardUnit.pas"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="21"/>
+        <UsageCount Value="30"/>
       </Unit>
       <Unit>
         <Filename Value="ImportProjectDialogUnit.pas"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="21"/>
+        <UsageCount Value="30"/>
       </Unit>
       <Unit>
         <Filename Value="../../lazarus/lcl/include/control.inc"/>
         <TopLine Value="2832"/>
         <CursorPos Y="2846"/>
+        <UsageCount Value="15"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="../../lazarus/lcl/include/promptdialog.inc"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="935"/>
+        <CursorPos Y="957"/>
         <UsageCount Value="11"/>
         <Loaded Value="True"/>
       </Unit>
     </Units>
-    <JumpHistory>
+    <JumpHistory HistoryIndex="1">
       <Position>
         <Filename Value="../../lazarus/lcl/include/control.inc"/>
         <Caret Line="2846" TopLine="2832"/>
+      </Position>
+      <Position>
+        <Filename Value="MainFormUnit.pas"/>
+        <Caret Line="628" Column="3" TopLine="613"/>
       </Position>
     </JumpHistory>
   </ProjectOptions>

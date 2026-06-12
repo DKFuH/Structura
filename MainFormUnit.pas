@@ -107,6 +107,7 @@ type
     procedure HelpClick(Sender: TObject);
     procedure AddAppMenuItem(const ACaption: string; AHandler: TNotifyEvent);
     procedure ProjectExportClick(Sender: TObject);
+    procedure ProjectSearchClick(Sender: TObject);
     procedure ReviewLinkClick(Sender: TObject);
     procedure NotesToggleClick(Sender: TObject);
     procedure UpdateNotesPreviewState;
@@ -227,7 +228,7 @@ uses
   ProjectStore, ProjectDialogUnit, ElementDialogUnit, DocumentWorkflow,
   DocxPreview, SettingsStore, SettingsDialogUnit, FirstRunWizardUnit,
   ImportProjectDialogUnit, AboutDialogUnit, ReviewDialogUnit, MarkdownPreview,
-  ExportDialogUnit;
+  ExportDialogUnit, SearchDialogUnit;
 
 function NormalizeStoredPathForCompare(const APath: string): string;
 begin
@@ -340,6 +341,8 @@ begin
   // Header-Menü für seltene/globale Aktionen (Einstellungen, Hilfe, Über).
   // Häufige Workflow-Aktionen bleiben als sichtbare Buttons.
   FAppMenu := TPopupMenu.Create(Self);
+  AddAppMenuItem('Projektsuche  (Strg+F)', @ProjectSearchClick);
+  AddAppMenuItem('-', nil);
   AddAppMenuItem('Einstellungen', @SettingsClick);
   AddAppMenuItem('Erste Schritte (Hilfe)', @HelpClick);
   AddAppMenuItem('-', nil);
@@ -1338,6 +1341,68 @@ begin
   ShowPopupMenuBelow(FProjectExportLabel, FExportPopupMenu);
 end;
 
+procedure TMainForm.ProjectSearchClick(Sender: TObject);
+var
+  Docs: TSearchDocs;
+  I, J, JumpTo: Integer;
+  Item: TStructuraItem;
+  NotesText, TasksText, Line: string;
+  Lines: TStringList;
+begin
+  if not Assigned(FProject) then
+  begin
+    UpdateStatus('Suche: Bitte zuerst ein Projekt öffnen.');
+    Exit;
+  end;
+
+  // Suchkorpus zusammenstellen — DOCX-Text-Extraktion kann dauern
+  Screen.Cursor := crHourGlass;
+  try
+    SetLength(Docs, FProject.Count);
+    Lines := TStringList.Create;
+    try
+      for I := 0 to FProject.Count - 1 do
+      begin
+        Item := FProject[I];
+        Docs[I].ItemIndex := I;
+        Docs[I].Title := Item.Title;
+        Docs[I].IsDivider := Item.ItemType = sitDivider;
+        Docs[I].Number := '';
+        Docs[I].Notes := '';
+        Docs[I].Tasks := '';
+        Docs[I].BodyText := '';
+        if Item.ItemType = sitDivider then
+          Continue;
+
+        Docs[I].Number := FormatChapterNumber(ChapterSequenceForIndex(I));
+        // Notizen in Fließtext und Aufgabenzeilen trennen
+        NotesText := '';
+        TasksText := '';
+        Lines.Text := LoadTextFileSafe(AbsoluteItemNotesFileName(Item));
+        for J := 0 to Lines.Count - 1 do
+        begin
+          Line := TrimLeft(Lines[J]);
+          if AnsiStartsStr('- [', Line) or AnsiStartsStr('* [', Line) then
+            TasksText := TasksText + Lines[J] + LineEnding
+          else
+            NotesText := NotesText + Lines[J] + LineEnding;
+        end;
+        Docs[I].Notes := NotesText;
+        Docs[I].Tasks := TasksText;
+        Docs[I].BodyText := TDocxPreview.LoadPreviewText(AbsoluteItemFileName(Item));
+      end;
+    finally
+      Lines.Free;
+    end;
+  finally
+    Screen.Cursor := crDefault;
+  end;
+
+  JumpTo := ShowSearchDialog(Docs);
+  if JumpTo >= 0 then
+    SelectItem(JumpTo);
+end;
+
 procedure TMainForm.HelpClick(Sender: TObject);
 begin
   OpenURL('https://github.com/DKFuH/Structura/blob/main/docs/first-steps.md');
@@ -1651,6 +1716,13 @@ end;
 procedure TMainForm.FormKeyDownHandler(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
+  // Strg+F öffnet die Projektsuche
+  if (ssCtrl in Shift) and (Key = VK_F) then
+  begin
+    ProjectSearchClick(nil);
+    Key := 0;
+    Exit;
+  end;
   if not (ssAlt in Shift) or not Assigned(FProject) then
     Exit;
   case Key of
