@@ -19,15 +19,92 @@ type
     class function ProjectFileName(const AFolder: string): string;
     class function AbsolutePath(const AFolder, ARelative: string): string;
     class function RelativePath(const AFolder, AAbsolute: string): string;
+    // Robustes, atomares Schreiben einer Textdatei: erst in eine Temp-Datei
+    // im selben Ordner, dann atomar über das Ziel verschieben — mit Retry
+    // gegen kurzzeitige Sperren (Nextcloud/Dropbox/OneDrive-Sync, Netzlaufwerke).
+    // Liefert False, wenn es endgültig nicht klappt; das Ziel bleibt dann
+    // unverändert (kein Datenverlust durch halben Schreibvorgang).
+    class function SaveTextAtomic(const AFileName, AText: string;
+      out AErrorText: string): Boolean;
   end;
 
 implementation
 
 uses
-  FileUtil;
+  {$IFDEF WINDOWS}Windows,{$ENDIF} FileUtil;
 
 const
   CURRENT_PROJECT_VERSION = 1;
+
+class function TProjectStore.SaveTextAtomic(const AFileName, AText: string;
+  out AErrorText: string): Boolean;
+const
+  MaxTries = 6;
+var
+  TempName: string;
+  SL: TStringList;
+  Attempt: Integer;
+  Wrote, Moved: Boolean;
+begin
+  Result := False;
+  AErrorText := '';
+  TempName := AFileName + '.tmp';
+
+  // 1) In die Temp-Datei schreiben (Original bleibt unangetastet)
+  Wrote := False;
+  SL := TStringList.Create;
+  try
+    SL.Text := AText;
+    for Attempt := 1 to MaxTries do
+    begin
+      try
+        SL.SaveToFile(TempName);
+        Wrote := True;
+        Break;
+      except
+        on E: Exception do
+        begin
+          AErrorText := E.Message;
+          if Attempt = MaxTries then Break;
+          Sleep(250);
+        end;
+      end;
+    end;
+  finally
+    SL.Free;
+  end;
+  if not Wrote then
+    Exit;
+
+  // 2) Atomar über das Ziel verschieben, mit Retry gegen Sync-Sperren
+  Moved := False;
+  for Attempt := 1 to MaxTries do
+  begin
+    {$IFDEF WINDOWS}
+    if MoveFileExW(PWideChar(UTF8Decode(TempName)), PWideChar(UTF8Decode(AFileName)),
+       MOVEFILE_REPLACE_EXISTING) then
+    begin
+      Moved := True;
+      Break;
+    end;
+    {$ELSE}
+    SysUtils.DeleteFile(AFileName);
+    if RenameFile(TempName, AFileName) then
+    begin
+      Moved := True;
+      Break;
+    end;
+    {$ENDIF}
+    AErrorText := 'Zieldatei ist gerade gesperrt (Sync/Netzlaufwerk?).';
+    Sleep(250);
+  end;
+
+  if Moved then
+    Result := True
+  else
+    // Temp aufräumen — Original ist intakt geblieben
+    SysUtils.DeleteFile(TempName);
+end;
 
 function IsAbsolutePath(const APath: string): Boolean;
 begin
@@ -197,9 +274,9 @@ var
   Items: TJSONArray;
   ItemObj: TJSONObject;
   I: Integer;
-  Content: TStringList;
   ProjectFile: string;
   BackupFile: string;
+  ErrorText: string;
 begin
   EnsureProjectFolders(AProject.FolderPath);
   ProjectFile := ProjectFileName(AProject.FolderPath);
@@ -234,13 +311,9 @@ begin
       ItemObj.Add('status', AProject[I].Status);
       Items.Add(ItemObj);
     end;
-    Content := TStringList.Create;
-    try
-      Content.Text := Root.FormatJSON;
-      Content.SaveToFile(ProjectFile);
-    finally
-      Content.Free;
-    end;
+    if not SaveTextAtomic(ProjectFile, Root.FormatJSON, ErrorText) then
+      raise Exception.Create('Projektdatei konnte nicht gespeichert werden: ' +
+        ErrorText);
   finally
     Root.Free;
   end;

@@ -1239,18 +1239,15 @@ end;
 
 procedure TMainForm.SaveTextFileSafe(const AFileName, AText: string);
 var
-  Content: TStringList;
+  ErrorText: string;
 begin
   if AFileName = '' then
     Exit;
   ForceDirectories(ExtractFileDir(AFileName));
-  Content := TStringList.Create;
-  try
-    Content.Text := AText;
-    Content.SaveToFile(AFileName);
-  finally
-    Content.Free;
-  end;
+  // Atomar schreiben — schützt Notizen vor Datenverlust bei Sync-Sperren
+  if not TProjectStore.SaveTextAtomic(AFileName, AText, ErrorText) then
+    UpdateStatus('Speichern fehlgeschlagen (Datei gesperrt?): ' +
+      ExtractFileName(AFileName));
 end;
 
 function TMainForm.FormatChapterNumber(ASequence: Integer): string;

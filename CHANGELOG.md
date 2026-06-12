@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Changed
+
+- Hardened file writes for cloud-synced / network project folders (Nextcloud, Dropbox, OneDrive, network drives): `structura.json` and chapter/project notes are now written atomically — first to a temp file, then moved over the target (Windows `MoveFileEx`), with retries against transient sync locks. A failed or interrupted write can no longer truncate or corrupt the real file; the original stays intact
+
 ### Fixed
 
 - Project cards (start screen) showed cover and chapter count but no title: the title label had no height and overlapped the subtitle. Titles now render in their own area, and the font size auto-shrinks to fit the title length (short titles large, long titles smaller, wrapping to two lines only when needed)
