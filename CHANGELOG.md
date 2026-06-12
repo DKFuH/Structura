@@ -16,6 +16,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 ### Changed
 
 - Daily backup now also runs on close: the day's `backup/daily/YYYY-MM-DD.zip` is refreshed when you exit the app, close a project, or switch projects — so the session's work is captured, not just the state at opening
+- Chapters marked "Final" are gently protected: editing, deleting, or moving one first asks "Das Kapitel ist als final markiert. Trotzdem …?" — a soft confirmation, not a lock (principle "Mitdenken ohne Dominieren")
 
 ---
 

@@ -108,6 +108,7 @@ type
     procedure AddAppMenuItem(const ACaption: string; AHandler: TNotifyEvent);
     procedure ProjectExportClick(Sender: TObject);
     procedure ProjectSearchClick(Sender: TObject);
+    function ConfirmFinalChange(AItem: TStructuraItem; const AAction: string): Boolean;
     procedure ReviewLinkClick(Sender: TObject);
     procedure NotesToggleClick(Sender: TObject);
     procedure UpdateNotesPreviewState;
@@ -3158,6 +3159,21 @@ begin
   SelectItem(FProject.Count - 1);
 end;
 
+// Sanfter Schutz für finale Kapitel: nicht sperren, nur nachfragen.
+function TMainForm.ConfirmFinalChange(AItem: TStructuraItem;
+  const AAction: string): Boolean;
+begin
+  Result := True;
+  if not Assigned(AItem) or (AItem.ItemType <> sitChapter) then
+    Exit;
+  if StatusIndex(AItem.Status) <> STATUS_FINAL_INDEX then
+    Exit;
+  Result := MessageDlg('Finales Kapitel',
+    Format('Das Kapitel „%s" ist als final markiert.' + LineEnding +
+      'Trotzdem %s?', [AItem.Title, AAction]),
+    mtConfirmation, [mbYes, mbNo], 0) = mrYes;
+end;
+
 procedure TMainForm.EditItemClick(Sender: TObject);
 var
   Item: TStructuraItem;
@@ -3165,6 +3181,8 @@ var
 begin
   Item := CurrentItem;
   if not Assigned(Item) then
+    Exit;
+  if not ConfirmFinalChange(Item, 'bearbeiten') then
     Exit;
 
   ResultData := ExecuteElementDialog(edmEdit, 'Element bearbeiten',
@@ -3190,6 +3208,8 @@ var
 begin
   Item := CurrentItem;
   if not Assigned(Item) then
+    Exit;
+  if not ConfirmFinalChange(Item, 'löschen') then
     Exit;
 
   if MessageDlg('Eintrag löschen',
@@ -3242,6 +3262,9 @@ begin
   if ToIndex < 0 then
     ToIndex := FProject.Count - 1;
   if (FromIndex < 0) or (ToIndex < 0) or (FromIndex = ToIndex) then
+    Exit;
+  if (FromIndex < FProject.Count) and
+     not ConfirmFinalChange(FProject[FromIndex], 'verschieben') then
     Exit;
 
   PersistCurrentNotes;
