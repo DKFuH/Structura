@@ -5,10 +5,10 @@ unit ReviewDialogUnit;
 
 interface
 
-// Zeigt die Review-Tabelle. Liefert den Index des Kapitels, zu dem der
-// Nutzer springen will, oder -1 wenn der Dialog nur geschlossen wurde.
-// Wortzahl und offene Aufgaben werden vom Aufrufer geliefert, damit die
-// Datei-Logik (DOCX-Vorschau, Notizpfade) im MainForm bleibt.
+// Zeigt die Review-Tabelle mit Filtern. Liefert den Index des Kapitels, zu
+// dem der Nutzer springen will, oder -1 wenn nur geschlossen wurde.
+// Wortzahl, offene Aufgaben und Dateialter werden vom Aufrufer geliefert,
+// damit die Datei-Logik im MainForm bleibt.
 type
   TReviewRow = record
     ItemIndex: Integer;     // Index in TStructuraProject
@@ -18,6 +18,7 @@ type
     WordCount: Integer;     // -1 für Trenner
     HasNotes: Boolean;
     OpenTasks: Integer;
+    StaleDays: Integer;     // Tage seit letzter Änderung, -1 unbekannt/Trenner
   end;
   TReviewRows = array of TReviewRow;
 
@@ -28,125 +29,176 @@ implementation
 uses
   Classes, SysUtils, Forms, Controls, StdCtrls, ExtCtrls, ComCtrls, Graphics;
 
+const
+  StaleThreshold = 30;
+
 type
-  TReviewDialogHelper = class
+  TReviewForm = class(TForm)
+  private
+    FRows: TReviewRows;
+    FList: TListView;
+    FFilter: TComboBox;
+    FCountLabel: TLabel;
+    procedure ApplyFilter(Sender: TObject);
+    procedure ListDblClick(Sender: TObject);
+    function RowMatches(const ARow: TReviewRow): Boolean;
   public
-    class procedure ListDblClick(Sender: TObject);
+    constructor CreateDialog(const ARows: TReviewRows);
   end;
 
-class procedure TReviewDialogHelper.ListDblClick(Sender: TObject);
-var
-  ParentForm: TCustomForm;
+function TReviewForm.RowMatches(const ARow: TReviewRow): Boolean;
 begin
-  ParentForm := GetParentForm(TControl(Sender));
-  if Assigned(ParentForm) then
-    ParentForm.ModalResult := mrOk;
+  // Trenner nur im Filter „Alle" zeigen
+  if ARow.WordCount < 0 then
+  begin
+    Result := FFilter.ItemIndex = 0;
+    Exit;
+  end;
+  case FFilter.ItemIndex of
+    1: Result := SameText(ARow.Status, 'Problem');
+    2: Result := ARow.OpenTasks > 0;
+    3: Result := not SameText(ARow.Status, 'Final');
+    4: Result := (ARow.StaleDays >= 0) and (ARow.StaleDays > StaleThreshold);
+  else
+    Result := True; // Alle
+  end;
+end;
+
+procedure TReviewForm.ApplyFilter(Sender: TObject);
+var
+  I: Integer;
+  Item: TListItem;
+begin
+  FList.Items.BeginUpdate;
+  try
+    FList.Items.Clear;
+    for I := 0 to High(FRows) do
+    begin
+      if not RowMatches(FRows[I]) then
+        Continue;
+      Item := FList.Items.Add;
+      Item.Data := Pointer(PtrInt(FRows[I].ItemIndex));
+      if FRows[I].WordCount < 0 then
+      begin
+        Item.Caption := '';
+        Item.SubItems.Add('— ' + FRows[I].Title + ' —');
+        Item.SubItems.Add(''); Item.SubItems.Add('');
+        Item.SubItems.Add(''); Item.SubItems.Add('');
+        Continue;
+      end;
+      Item.Caption := FRows[I].Number;
+      Item.SubItems.Add(FRows[I].Title);
+      Item.SubItems.Add(FRows[I].Status);
+      Item.SubItems.Add(IntToStr(FRows[I].WordCount));
+      if FRows[I].OpenTasks > 0 then
+        Item.SubItems.Add(IntToStr(FRows[I].OpenTasks))
+      else
+        Item.SubItems.Add('—');
+      if FRows[I].StaleDays >= 0 then
+        Item.SubItems.Add(IntToStr(FRows[I].StaleDays) + ' T')
+      else
+        Item.SubItems.Add('—');
+    end;
+  finally
+    FList.Items.EndUpdate;
+  end;
+  if FList.Items.Count > 0 then
+    FList.ItemIndex := 0;
+  FCountLabel.Caption := Format('%d Kapitel', [FList.Items.Count]);
+end;
+
+procedure TReviewForm.ListDblClick(Sender: TObject);
+begin
+  if Assigned(FList.Selected) then
+    ModalResult := mrOk;
+end;
+
+constructor TReviewForm.CreateDialog(const ARows: TReviewRows);
+var
+  Lbl: TLabel;
+  CloseButton, JumpButton: TButton;
+begin
+  inherited CreateNew(nil);
+  FRows := ARows;
+
+  Caption := 'Review-Ansicht';
+  Position := poScreenCenter;
+  ClientWidth := 880;
+  ClientHeight := 540;
+  Constraints.MinWidth := 640;
+  Constraints.MinHeight := 360;
+
+  Lbl := TLabel.Create(Self);
+  Lbl.Parent := Self;
+  Lbl.SetBounds(16, 16, 40, 18);
+  Lbl.Caption := 'Filter:';
+
+  FFilter := TComboBox.Create(Self);
+  FFilter.Parent := Self;
+  FFilter.SetBounds(60, 12, 240, 26);
+  FFilter.Style := csDropDownList;
+  FFilter.Items.Add('Alle');
+  FFilter.Items.Add('Problemkapitel');
+  FFilter.Items.Add('Offene Aufgaben');
+  FFilter.Items.Add('Nicht final');
+  FFilter.Items.Add('Lange nicht bearbeitet (30+ Tage)');
+  FFilter.ItemIndex := 0;
+  FFilter.OnChange := @ApplyFilter;
+
+  FCountLabel := TLabel.Create(Self);
+  FCountLabel.Parent := Self;
+  FCountLabel.SetBounds(ClientWidth - 180, 16, 164, 18);
+  FCountLabel.Anchors := [akTop, akRight];
+  FCountLabel.Alignment := taRightJustify;
+  FCountLabel.Font.Color := clGrayText;
+
+  FList := TListView.Create(Self);
+  FList.Parent := Self;
+  FList.SetBounds(16, 48, 848, 444);
+  FList.Anchors := [akTop, akLeft, akRight, akBottom];
+  FList.ViewStyle := vsReport;
+  FList.ReadOnly := True;
+  FList.RowSelect := True;
+  FList.GridLines := True;
+  FList.HideSelection := False;
+  with FList.Columns.Add do begin Caption := 'Nr.';     Width := 56;  end;
+  with FList.Columns.Add do begin Caption := 'Kapitel'; Width := 340; end;
+  with FList.Columns.Add do begin Caption := 'Status';  Width := 150; end;
+  with FList.Columns.Add do begin Caption := 'Wörter';  Width := 80;  Alignment := taRightJustify; end;
+  with FList.Columns.Add do begin Caption := 'Aufgaben'; Width := 90; Alignment := taRightJustify; end;
+  with FList.Columns.Add do begin Caption := 'Geändert'; Width := 90; Alignment := taRightJustify; end;
+  FList.OnDblClick := @ListDblClick;
+
+  JumpButton := TButton.Create(Self);
+  JumpButton.Parent := Self;
+  JumpButton.Caption := 'Zum Kapitel';
+  JumpButton.ModalResult := mrOk;
+  JumpButton.Default := True;
+  JumpButton.Anchors := [akBottom, akRight];
+  JumpButton.SetBounds(ClientWidth - 230, ClientHeight - 36, 110, 27);
+
+  CloseButton := TButton.Create(Self);
+  CloseButton.Parent := Self;
+  CloseButton.Caption := 'Schließen';
+  CloseButton.ModalResult := mrCancel;
+  CloseButton.Cancel := True;
+  CloseButton.Anchors := [akBottom, akRight];
+  CloseButton.SetBounds(ClientWidth - 110, ClientHeight - 36, 94, 27);
+
+  ApplyFilter(nil);
 end;
 
 function ShowReviewDialog(const ARows: TReviewRows): Integer;
 var
-  Dialog: TForm;
-  ListView: TListView;
-  ButtonPanel: TPanel;
-  CloseButton, JumpButton: TButton;
-  HintLabel: TLabel;
-  I: Integer;
-  Item: TListItem;
+  Dlg: TReviewForm;
 begin
   Result := -1;
-  Dialog := TForm.Create(nil);
+  Dlg := TReviewForm.CreateDialog(ARows);
   try
-    Dialog.Caption := 'Review-Ansicht';
-    Dialog.Position := poScreenCenter;
-    Dialog.ClientWidth := 860;
-    Dialog.ClientHeight := 520;
-    Dialog.Constraints.MinWidth := 640;
-    Dialog.Constraints.MinHeight := 360;
-
-    ButtonPanel := TPanel.Create(Dialog);
-    ButtonPanel.Parent := Dialog;
-    ButtonPanel.Align := alBottom;
-    ButtonPanel.Height := 44;
-    ButtonPanel.BevelOuter := bvNone;
-
-    HintLabel := TLabel.Create(Dialog);
-    HintLabel.Parent := ButtonPanel;
-    HintLabel.Left := 12;
-    HintLabel.Top := 14;
-    HintLabel.Caption := 'Doppelklick springt zum Kapitel.';
-    HintLabel.Font.Color := clGrayText;
-
-    JumpButton := TButton.Create(Dialog);
-    JumpButton.Parent := ButtonPanel;
-    JumpButton.Caption := 'Zum Kapitel';
-    JumpButton.ModalResult := mrOk;
-    JumpButton.Default := True;
-    JumpButton.Anchors := [akTop, akRight];
-    JumpButton.SetBounds(Dialog.ClientWidth - 230, 8, 110, 27);
-
-    CloseButton := TButton.Create(Dialog);
-    CloseButton.Parent := ButtonPanel;
-    CloseButton.Caption := 'Schließen';
-    CloseButton.ModalResult := mrCancel;
-    CloseButton.Cancel := True;
-    CloseButton.Anchors := [akTop, akRight];
-    CloseButton.SetBounds(Dialog.ClientWidth - 110, 8, 86, 27);
-
-    ListView := TListView.Create(Dialog);
-    ListView.Parent := Dialog;
-    ListView.Align := alClient;
-    ListView.ViewStyle := vsReport;
-    ListView.ReadOnly := True;
-    ListView.RowSelect := True;
-    ListView.GridLines := True;
-    ListView.HideSelection := False;
-
-    with ListView.Columns.Add do begin Caption := 'Nr.';            Width := 60;  end;
-    with ListView.Columns.Add do begin Caption := 'Kapitel';        Width := 330; end;
-    with ListView.Columns.Add do begin Caption := 'Status';         Width := 150; end;
-    with ListView.Columns.Add do begin Caption := 'Wörter';         Width := 90;  Alignment := taRightJustify; end;
-    with ListView.Columns.Add do begin Caption := 'Notizen';        Width := 80;  end;
-    with ListView.Columns.Add do begin Caption := 'Offene Aufgaben'; Width := 120; Alignment := taRightJustify; end;
-
-    for I := 0 to High(ARows) do
-    begin
-      Item := ListView.Items.Add;
-      Item.Data := Pointer(PtrInt(ARows[I].ItemIndex));
-      if ARows[I].WordCount < 0 then
-      begin
-        // Trenner: nur als Gliederungszeile zeigen
-        Item.Caption := '';
-        Item.SubItems.Add('— ' + ARows[I].Title + ' —');
-        Item.SubItems.Add('');
-        Item.SubItems.Add('');
-        Item.SubItems.Add('');
-        Item.SubItems.Add('');
-        Continue;
-      end;
-      Item.Caption := ARows[I].Number;
-      Item.SubItems.Add(ARows[I].Title);
-      Item.SubItems.Add(ARows[I].Status);
-      Item.SubItems.Add(IntToStr(ARows[I].WordCount));
-      if ARows[I].HasNotes then
-        Item.SubItems.Add('ja')
-      else
-        Item.SubItems.Add('—');
-      if ARows[I].OpenTasks > 0 then
-        Item.SubItems.Add(IntToStr(ARows[I].OpenTasks))
-      else
-        Item.SubItems.Add('—');
-    end;
-
-    if ListView.Items.Count > 0 then
-      ListView.ItemIndex := 0;
-
-    // Doppelklick = Sprung: gleiche Wirkung wie der Zum-Kapitel-Button
-    ListView.OnDblClick := @TReviewDialogHelper.ListDblClick;
-
-    if (Dialog.ShowModal = mrOk) and Assigned(ListView.Selected) then
-      Result := PtrInt(ListView.Selected.Data);
+    if (Dlg.ShowModal = mrOk) and Assigned(Dlg.FList.Selected) then
+      Result := PtrInt(Dlg.FList.Selected.Data);
   finally
-    Dialog.Free;
+    Dlg.Free;
   end;
 end;
 

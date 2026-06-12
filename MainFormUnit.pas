@@ -97,6 +97,7 @@ type
     procedure ComputeDashboardData;
     procedure DashboardPaint(Sender: TObject);
     function CountOpenTasksInNotes(const AFileName: string): Integer;
+    function ChapterStaleDays(AItem: TStructuraItem): Integer;
     procedure ClearDashboardLinks;
     procedure RebuildDashboardLinks;
     procedure DashboardLinkClick(Sender: TObject);
@@ -1193,6 +1194,19 @@ begin
     Result := clSilver;           // Rohfassung / unbekannt
 end;
 
+function TMainForm.ChapterStaleDays(AItem: TStructuraItem): Integer;
+var
+  FileName: string;
+  FileDate: TDateTime;
+begin
+  Result := -1;
+  if not Assigned(AItem) or (AItem.ItemType <> sitChapter) then
+    Exit;
+  FileName := AbsoluteItemFileName(AItem);
+  if FileExists(FileName) and FileAge(FileName, FileDate) then
+    Result := Trunc(Now) - Trunc(FileDate);
+end;
+
 function TMainForm.CountOpenTasksInNotes(const AFileName: string): Integer;
 var
   Lines: TStringList;
@@ -1696,6 +1710,7 @@ begin
       Rows[RowIndex].WordCount := -1;
       Rows[RowIndex].HasNotes := False;
       Rows[RowIndex].OpenTasks := 0;
+      Rows[RowIndex].StaleDays := -1;
     end
     else
     begin
@@ -1706,6 +1721,7 @@ begin
         Trim(LoadTextFileSafe(AbsoluteItemNotesFileName(Item))) <> '';
       Rows[RowIndex].OpenTasks :=
         CountOpenTasksInNotes(AbsoluteItemNotesFileName(Item));
+      Rows[RowIndex].StaleDays := ChapterStaleDays(Item);
     end;
     Inc(RowIndex);
   end;
