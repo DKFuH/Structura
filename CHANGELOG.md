@@ -15,6 +15,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 - Project milestones on the overview (below the cover): draft complete, half reviewed, no open tasks, all chapters final, export created — achieved ones marked ✓, open ones ○, as quiet motivation
 - UI calm-down (after a UX review): the "Zuletzt bearbeitet" list on the project overview was removed (redundant with the "Weiterarbeiten" line), and the chapter action buttons were relabelled from tool-speak ("Öffnen mit ▼") to calm labels ("Öffnen ▾", "Prüfen ▾", "Kopieren ▾", "Export ▾")
 - The chapter action row now reads as one band: the four dropdowns are uniform width (132 px) with even spacing, on the plain background (no colour fill)
+- The top navigation strip is now a deliberate colour-set-off header band, with a taller band in the chapter view (back link + shortcut hints) and a flatter one in the project overview (back-to-list + export); chapter content moved up accordingly
 - Quiet session feedback (zen, no scoreboard): once you complete tasks or set a chapter status during a session, the status bar calmly notes "Diese Sitzung: 2 Aufgaben abgeschlossen · Kapitel 05 … geprüft", and a soft "Bis bald." on close. Resets per project/session
 
 ---

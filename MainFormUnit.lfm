@@ -298,7 +298,7 @@ object MainForm: TMainForm
       object ChapterHeadingLabel: TLabel
         Left = 24
         Height = 26
-        Top = 48
+        Top = 12
         Width = 0
         Font.Height = -21
         Font.Style = [fsBold]
@@ -308,7 +308,7 @@ object MainForm: TMainForm
       object ChapterMetaLabel: TLabel
         Left = 24
         Height = 66
-        Top = 92
+        Top = 56
         Width = 920
         AutoSize = False
         WordWrap = True
@@ -316,7 +316,7 @@ object MainForm: TMainForm
       object ChapterStatusLabel: TLabel
         Left = 24
         Height = 15
-        Top = 172
+        Top = 136
         Width = 116
         Caption = 'Bearbeitungsstatus'
         Font.Style = [fsBold]
@@ -326,7 +326,7 @@ object MainForm: TMainForm
       object ChapterStatusCombo: TComboBox
         Left = 24
         Height = 29
-        Top = 200
+        Top = 164
         Width = 280
         ItemHeight = 0
         Style = csDropDownList
@@ -336,7 +336,7 @@ object MainForm: TMainForm
       object ChapterActionPanel: TFlowPanel
         Left = 24
         Height = 46
-        Top = 248
+        Top = 212
         Width = 1012
         BevelOuter = bvNone
         ControlList = <>

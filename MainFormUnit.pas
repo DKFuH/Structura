@@ -26,6 +26,8 @@ type
     FCopyPopupMenu: TPopupMenu;
     FExportPopupMenu: TPopupMenu;
     FBackLabel: TLabel;
+    FShortcutLabel: TLabel;
+    FHeaderBand: TPanel;
     FProjectBackLabel: TLabel;
     FProjectExportLabel: TLabel;
     FContinueLabel: TLabel;
@@ -106,6 +108,7 @@ type
     function ChapterStaleDays(AItem: TStructuraItem): Integer;
     function MostRecentlyEditedChapter: Integer;
     procedure ContinueClick(Sender: TObject);
+    procedure ApplyHeaderBand(AChapterView: Boolean);
     function BuildMilestonesText: string;
     function SessionSummaryText: string;
     procedure ClearDashboardLinks;
@@ -408,27 +411,40 @@ begin
   FDashboardBox.Visible := False;
   ProjectStatusLabel.Visible := False;
 
+  // Farblich abgesetztes Navigations-Band oben über dem rechten Bereich.
+  // Höhe wird je Ansicht angepasst (siehe ApplyHeaderBand).
+  FHeaderBand := TPanel.Create(Self);
+  FHeaderBand.Parent := RightPanel;
+  FHeaderBand.Align := alTop;
+  FHeaderBand.Height := 40;
+  FHeaderBand.BevelOuter := bvNone;
+  FHeaderBand.Color := TColor($00F2EEE7);
+  FHeaderBand.ParentColor := False;
+  FHeaderBand.ParentBackground := False;
+
   // Zurück zur Projektliste („Zuletzt geöffnet") aus dem offenen Projekt
   FProjectBackLabel := TLabel.Create(Self);
-  FProjectBackLabel.Parent := ProjectPanel;
+  FProjectBackLabel.Parent := FHeaderBand;
   FProjectBackLabel.Left := 24;
-  FProjectBackLabel.Top := 4;
+  FProjectBackLabel.Top := 10;
   FProjectBackLabel.Caption := '← Zur Projektliste';
   FProjectBackLabel.Cursor := crHandPoint;
   FProjectBackLabel.Font.Color := TColor($006B3D1E);
+  FProjectBackLabel.Transparent := True;
   FProjectBackLabel.Visible := False;
   FProjectBackLabel.OnClick := @CloseProjectClick;
 
   // Export direkt aus der Projektübersicht (gleiche Aktion wie in der Kapitelansicht)
   FProjectExportLabel := TLabel.Create(Self);
-  FProjectExportLabel.Parent := ProjectPanel;
+  FProjectExportLabel.Parent := FHeaderBand;
   FProjectExportLabel.Anchors := [akTop, akRight];
-  FProjectExportLabel.Left := ProjectPanel.ClientWidth - 90;
-  FProjectExportLabel.Top := 4;
+  FProjectExportLabel.Left := FHeaderBand.ClientWidth - 90;
+  FProjectExportLabel.Top := 10;
   FProjectExportLabel.Caption := 'Export ▾';
   FProjectExportLabel.Cursor := crHandPoint;
   FProjectExportLabel.Font.Color := TColor($006B3D1E);
   FProjectExportLabel.Font.Style := [fsBold];
+  FProjectExportLabel.Transparent := True;
   FProjectExportLabel.Visible := False;
   FProjectExportLabel.OnClick := @ProjectExportClick;
 
@@ -468,23 +484,50 @@ begin
     end;
 
   FBackLabel := TLabel.Create(Self);
-  FBackLabel.Parent := ChapterPanel;
+  FBackLabel.Parent := FHeaderBand;
   FBackLabel.Left := 24;
   FBackLabel.Top := 12;
   FBackLabel.Caption := '← Projektübersicht';
   FBackLabel.Cursor := crHandPoint;
   FBackLabel.Font.Color := $006B3D1E;
   FBackLabel.Font.Height := -17;
+  FBackLabel.Transparent := True;
+  FBackLabel.Visible := False;
   FBackLabel.OnClick := @BackToOverviewClick;
 
   // Dezenter Hinweis auf die Tastaturnavigation
-  with TLabel.Create(Self) do
+  FShortcutLabel := TLabel.Create(Self);
+  FShortcutLabel.Parent := FHeaderBand;
+  FShortcutLabel.Left := 240;
+  FShortcutLabel.Top := 16;
+  FShortcutLabel.Caption := 'Alt+←/→ Kapitel wechseln · Alt+O nächstes offenes · Alt+P nächstes Problem';
+  FShortcutLabel.Font.Color := clGrayText;
+  FShortcutLabel.Transparent := True;
+  FShortcutLabel.Visible := False;
+end;
+
+// Header-Band je Ansicht: Kapitelansicht höher (mit Tastaturhinweis),
+// Projektübersicht flacher. Schaltet die passenden Labels sichtbar.
+procedure TMainForm.ApplyHeaderBand(AChapterView: Boolean);
+begin
+  if not Assigned(FHeaderBand) then
+    Exit;
+  if AChapterView then
   begin
-    Parent := ChapterPanel;
-    Left := 240;
-    Top := 16;
-    Caption := 'Alt+←/→ Kapitel wechseln · Alt+O nächstes offenes · Alt+P nächstes Problem';
-    Font.Color := clGrayText;
+    FHeaderBand.Height := 44;
+    FBackLabel.Visible := True;
+    FShortcutLabel.Visible := True;
+    FProjectBackLabel.Visible := False;
+    FProjectExportLabel.Visible := False;
+  end
+  else
+  begin
+    FHeaderBand.Height := 34;
+    FBackLabel.Visible := False;
+    FShortcutLabel.Visible := False;
+    FProjectBackLabel.Visible := Assigned(FProject);
+    FProjectExportLabel.Visible := Assigned(FProject);
+    FProjectExportLabel.Left := FHeaderBand.ClientWidth - 90;
   end;
 end;
 
@@ -874,10 +917,8 @@ begin
     end;
     if Assigned(FDashboardBox) then
       FDashboardBox.Visible := False;
-    if Assigned(FProjectBackLabel) then
-      FProjectBackLabel.Visible := False;
-    if Assigned(FProjectExportLabel) then
-      FProjectExportLabel.Visible := False;
+    if Assigned(FHeaderBand) then
+      FHeaderBand.Visible := False;
     if Assigned(FContinueLabel) then
       FContinueLabel.Visible := False;
     if Assigned(FMilestonesLabel) then
@@ -895,10 +936,10 @@ begin
     FWelcomeImage.Visible := False;
   if Assigned(FProjectBackLabel) then
     FProjectBackLabel.Visible := True;
-  if Assigned(FProjectExportLabel) then
+  if Assigned(FHeaderBand) then
   begin
-    FProjectExportLabel.Left := ProjectPanel.ClientWidth - 90;
-    FProjectExportLabel.Visible := True;
+    FHeaderBand.Visible := True;
+    ApplyHeaderBand(False);
   end;
   if Assigned(FContinueLabel) then
   begin
@@ -1120,6 +1161,11 @@ begin
     ItemListBox.ItemIndex := Index;
     ProjectPanel.Visible := False;
     ChapterPanel.Visible := True;
+    if Assigned(FHeaderBand) then
+    begin
+      FHeaderBand.Visible := True;
+      ApplyHeaderBand(True);
+    end;
   finally
     FUpdatingUi := False;
   end;
@@ -1676,8 +1722,8 @@ procedure TMainForm.LayoutChapterView(Sender: TObject);
 const
   Margin = 24;
   Gap = 26;
-  RowTop = 316;       // Höhe der Spaltenüberschriften
-  ColTop = 344;       // Beginn der Inhalte
+  RowTop = 278;       // Höhe der Spaltenüberschriften
+  ColTop = 306;       // Beginn der Inhalte
   TaskListH = 120;
   InputH = 27;
   LabelH = 28;
