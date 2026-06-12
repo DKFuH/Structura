@@ -204,6 +204,26 @@ object SettingsDialogForm: TSettingsDialogForm
           TabOrder = 10
           Value = 14
         end
+        object NormpageLabel: TLabel
+          Left = 480
+          Height = 15
+          Top = 132
+          Width = 200
+          Caption = 'Normseite (Zeichen je Seite)'
+        end
+        object NormpageCombo: TComboBox
+          Left = 480
+          Height = 23
+          Top = 152
+          Width = 216
+          ItemHeight = 15
+          Items.Strings = (
+            '1.500 Zeichen'
+            '1.800 Zeichen'
+          )
+          Style = csDropDownList
+          TabOrder = 11
+        end
         object ProgramStatusLabel: TLabel
           Left = 16
           Height = 100

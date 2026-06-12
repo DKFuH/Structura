@@ -918,7 +918,7 @@ procedure TMainForm.RefreshProjectView;
 var
   CoverPath: string;
   ChapterCount: Integer;
-  WordTotal, CharTotal, NormPages: Integer;
+  WordTotal, CharTotal, NormPages, NormChars: Integer;
 begin
   if not Assigned(FProject) then
   begin
@@ -1022,11 +1022,14 @@ begin
   else
   begin
     ProjectWordAndCharCount(WordTotal, CharTotal);
-    NormPages := Round(CharTotal / 1500);
+    NormChars := 1500;
+    if Assigned(FSettings) and (FSettings.NormpageChars > 0) then
+      NormChars := FSettings.NormpageChars;
+    NormPages := Round(CharTotal / NormChars);
     ProjectStatsLabel.Caption := Format(
-      'Projektordner: %s%sKapitel: %d%sGesamtwortzahl: %d%sca. %d Normseiten (%d Zeichen ÷ 1.500)',
+      'Projektordner: %s%sKapitel: %d%sGesamtwortzahl: %d%sca. %d Normseiten (%d Zeichen ÷ %d)',
       [FProject.FolderPath, LineEnding, ChapterCount, LineEnding, WordTotal,
-       LineEnding, NormPages, CharTotal]);
+       LineEnding, NormPages, CharTotal, NormChars]);
   end;
   ProjectStatusLabel.Caption := 'Projektstatus: ' + ProjectStatusSummary;
 

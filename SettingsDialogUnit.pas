@@ -28,6 +28,8 @@ type
     MainPageControl: TPageControl;
     NumberFormatCombo: TComboBox;
     NumberFormatLabel: TLabel;
+    NormpageCombo: TComboBox;
+    NormpageLabel: TLabel;
     OkButton: TButton;
     PreferredEditorEdit: TEdit;
     PreferredEditorLabel: TLabel;
@@ -252,6 +254,10 @@ begin
     else
       NumberFormatCombo.ItemIndex := 1;
     BackupKeepDaysEdit.Value := FWorkingCopy.DailyBackupKeepDays;
+    if FWorkingCopy.NormpageChars = 1800 then
+      NormpageCombo.ItemIndex := 1
+    else
+      NormpageCombo.ItemIndex := 0;
     RefreshWorkflowList;
     RefreshProgramState;
 
@@ -267,6 +273,10 @@ begin
     if NumberFormatCombo.ItemIndex >= 0 then
       FWorkingCopy.ChapterNumberDigits := NumberFormatCombo.ItemIndex + 1;
     FWorkingCopy.DailyBackupKeepDays := BackupKeepDaysEdit.Value;
+    if NormpageCombo.ItemIndex = 1 then
+      FWorkingCopy.NormpageChars := 1800
+    else
+      FWorkingCopy.NormpageChars := 1500;
     FWorkingCopy.EnsureDefaultWorkflowButtons;
     FSettings.Assign(FWorkingCopy);
   finally

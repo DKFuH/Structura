@@ -38,6 +38,7 @@ type
     TextMakerPathOverride: string;
     ChapterNumberDigits: Integer; // Stellen der Kapitelnummer im Dateinamen (1..3)
     DailyBackupKeepDays: Integer; // Tagesbackups älter als X Tage werden gelöscht
+    NormpageChars: Integer;       // Zeichen pro Normseite (1500 oder 1800)
     constructor Create;
     destructor Destroy; override;
     procedure Clear;
@@ -120,6 +121,7 @@ begin
   FRecentProjects := TStringList.Create;
   ChapterNumberDigits := 2;
   DailyBackupKeepDays := 14;
+  NormpageChars := 1500;
 end;
 
 destructor TAppSettings.Destroy;
@@ -138,6 +140,7 @@ begin
   TextMakerPathOverride := '';
   ChapterNumberDigits := 2;
   DailyBackupKeepDays := 14;
+  NormpageChars := 1500;
   FWorkflowButtons.Clear;
   FRecentProjects.Clear;
 end;
@@ -158,6 +161,7 @@ begin
   TextMakerPathOverride := Source.TextMakerPathOverride;
   ChapterNumberDigits := Source.ChapterNumberDigits;
   DailyBackupKeepDays := Source.DailyBackupKeepDays;
+  NormpageChars := Source.NormpageChars;
 
   for I := 0 to Source.RecentProjectCount - 1 do
     FRecentProjects.Add(Source.RecentProjects[I]);
@@ -278,6 +282,7 @@ begin
   Result.Add('textMakerPathOverride', TextMakerPathOverride);
   Result.Add('chapterNumberDigits', ChapterNumberDigits);
   Result.Add('dailyBackupKeepDays', DailyBackupKeepDays);
+  Result.Add('normpageChars', NormpageChars);
   Recent := TJSONArray.Create;
   for I := 0 to FRecentProjects.Count - 1 do
     Recent.Add(FRecentProjects[I]);
@@ -309,6 +314,9 @@ begin
   DailyBackupKeepDays := AObject.Get('dailyBackupKeepDays', 14);
   if (DailyBackupKeepDays < 1) or (DailyBackupKeepDays > 365) then
     DailyBackupKeepDays := 14;
+  NormpageChars := AObject.Get('normpageChars', 1500);
+  if (NormpageChars <> 1500) and (NormpageChars <> 1800) then
+    NormpageChars := 1500;
 
   RecentData := AObject.Find('recentProjects');
   if RecentData is TJSONArray then

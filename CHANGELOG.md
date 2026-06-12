@@ -11,7 +11,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ### Added
 
-- Project overview now shows standard manuscript pages (Normseiten) next to the word count: total characters (incl. spaces, real UTF-8 characters, line breaks excluded) ÷ 1,500
+- Project overview now shows standard manuscript pages (Normseiten) next to the word count: total characters (incl. spaces, real UTF-8 characters, line breaks excluded) ÷ characters-per-page. The characters per page (1,500 or 1,800) can be chosen in Settings (General tab)
 
 ### Changed
 
