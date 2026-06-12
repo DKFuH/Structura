@@ -141,6 +141,7 @@ type
     function RenumberChapterFiles: Boolean;
     function ChapterWordCount(AItem: TStructuraItem): Integer;
     function ProjectWordCount: Integer;
+    procedure ProjectWordAndCharCount(out AWords, AChars: Integer);
     function FileModifiedText(const AFileName: string): string;
     function ProjectStatusSummary: string;
     function BuildWorkflowCopyText(AConfig: TWorkflowButtonConfig): string;
@@ -917,6 +918,7 @@ procedure TMainForm.RefreshProjectView;
 var
   CoverPath: string;
   ChapterCount: Integer;
+  WordTotal, CharTotal, NormPages: Integer;
 begin
   if not Assigned(FProject) then
   begin
@@ -1018,9 +1020,14 @@ begin
       'Projektordner: %s%sNoch keine Kapitel angelegt. Klicke auf "Anlegen", um zu starten.',
       [FProject.FolderPath, LineEnding])
   else
+  begin
+    ProjectWordAndCharCount(WordTotal, CharTotal);
+    NormPages := Round(CharTotal / 1500);
     ProjectStatsLabel.Caption := Format(
-      'Projektordner: %s%sKapitel: %d%sGesamtwortzahl: %d',
-      [FProject.FolderPath, LineEnding, ChapterCount, LineEnding, ProjectWordCount]);
+      'Projektordner: %s%sKapitel: %d%sGesamtwortzahl: %d%sca. %d Normseiten (%d Zeichen ÷ 1.500)',
+      [FProject.FolderPath, LineEnding, ChapterCount, LineEnding, WordTotal,
+       LineEnding, NormPages, CharTotal]);
+  end;
   ProjectStatusLabel.Caption := 'Projektstatus: ' + ProjectStatusSummary;
 
   FUpdatingUi := True;
@@ -2625,6 +2632,23 @@ begin
   end;
 end;
 
+// Zeichen inklusive Leerzeichen, ohne Zeilenumbrüche; zählt echte UTF-8-Zeichen
+// (Umlaute = 1), Grundlage für die Normseiten-Berechnung.
+function CharCountFromText(const AText: string): Integer;
+var
+  I, B: Integer;
+begin
+  Result := 0;
+  for I := 1 to Length(AText) do
+  begin
+    B := Ord(AText[I]);
+    if (B = 10) or (B = 13) then
+      Continue;                     // Zeilenumbrüche nicht mitzählen
+    if (B and $C0) <> $80 then
+      Inc(Result);                  // nur Nicht-Folgebytes = je ein Zeichen
+  end;
+end;
+
 function WordCountFromText(const AText: string): Integer;
 var
   I: Integer;
@@ -2664,6 +2688,26 @@ begin
   for I := 0 to FProject.Count - 1 do
     if FProject[I].ItemType = sitChapter then
       Inc(Result, ChapterWordCount(FProject[I]));
+end;
+
+// Wörter und Zeichen (für Normseiten) in einem Durchgang — extrahiert den
+// DOCX-Text nur einmal pro Kapitel.
+procedure TMainForm.ProjectWordAndCharCount(out AWords, AChars: Integer);
+var
+  I: Integer;
+  T: string;
+begin
+  AWords := 0;
+  AChars := 0;
+  if not Assigned(FProject) then
+    Exit;
+  for I := 0 to FProject.Count - 1 do
+    if FProject[I].ItemType = sitChapter then
+    begin
+      T := TDocxPreview.LoadPreviewText(AbsoluteItemFileName(FProject[I]));
+      Inc(AWords, WordCountFromText(T));
+      Inc(AChars, CharCountFromText(T));
+    end;
 end;
 
 function TMainForm.FileModifiedText(const AFileName: string): string;

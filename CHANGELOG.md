@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added
+
+- Project overview now shows standard manuscript pages (Normseiten) next to the word count: total characters (incl. spaces, real UTF-8 characters, line breaks excluded) ÷ 1,500
+
 ### Changed
 
 - Hardened file writes for cloud-synced / network project folders (Nextcloud, Dropbox, OneDrive, network drives): `structura.json` and chapter/project notes are now written atomically — first to a temp file, then moved over the target (Windows `MoveFileEx`), with retries against transient sync locks. A failed or interrupted write can no longer truncate or corrupt the real file; the original stays intact
