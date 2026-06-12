@@ -116,7 +116,8 @@ type
     function EnsureUniqueRelativeFileName(const ARelative: string): string;
     function MakeSafeFileNamePart(const AValue: string): string;
     function CreateBackupCopy(const AAbsoluteFileName: string): Boolean;
-    procedure EnsureDailyZipBackup;
+    procedure EnsureDailyZipBackup(AForceUpdate: Boolean = False);
+    procedure BackupCurrentProjectOnClose;
     function RenameChapterFile(AItem: TStructuraItem; AListIndex: Integer): Boolean;
     function RenumberChapterFiles: Boolean;
     function ChapterWordCount(AItem: TStructuraItem): Integer;
@@ -708,6 +709,9 @@ end;
 
 procedure TMainForm.SetProject(AProject: TStructuraProject);
 begin
+  // Beim Wechsel das bisherige Projekt noch sichern (Tagesbackup aktualisieren)
+  if Assigned(FProject) and (AProject <> FProject) then
+    EnsureDailyZipBackup(True);
   FreeAndNil(FProject);
   FProject := AProject;
   if Assigned(FProject) then
@@ -2103,7 +2107,7 @@ begin
   Result := CopyFile(AAbsoluteFileName, TargetFile, [cffOverwriteFile]);
 end;
 
-procedure TMainForm.EnsureDailyZipBackup;
+procedure TMainForm.EnsureDailyZipBackup(AForceUpdate: Boolean);
 
   // Datum aus Dateinamen der Form JJJJ-MM-TT.zip lesen; False bei Fremddateien.
   function TryDateFromZipName(const AFileName: string; out ADate: TDateTime): Boolean;
@@ -2156,9 +2160,15 @@ begin
   DailyFolder := BackupRoot + PathDelim + 'daily';
   ZipFileName := DailyFolder + PathDelim + FormatDateTime('yyyy-mm-dd', Now) + '.zip';
 
-  // Pro Tag genau ein Backup — existiert es bereits, nichts tun.
+  // Beim Öffnen genügt ein Backup pro Tag. Beim Schließen (AForceUpdate)
+  // wird das heutige Backup auf den aktuellen Stand gebracht, damit die
+  // Arbeit der Sitzung gesichert ist.
   if FileExists(ZipFileName) then
-    Exit;
+  begin
+    if not AForceUpdate then
+      Exit;
+    DeleteFile(ZipFileName);
+  end;
 
   Files := TStringList.Create;
   Zip := TZipper.Create;
@@ -2192,6 +2202,18 @@ begin
     Zip.Free;
     Files.Free;
   end;
+end;
+
+// Vor dem Schließen/Wechseln: Notizen sichern und das heutige Tagesbackup
+// auf den aktuellen Stand bringen.
+procedure TMainForm.BackupCurrentProjectOnClose;
+begin
+  if not Assigned(FProject) then
+    Exit;
+  PersistCurrentNotes;
+  PersistProjectNotes;
+  SaveProject;
+  EnsureDailyZipBackup(True);
 end;
 
 function TMainForm.RenameChapterFile(AItem: TStructuraItem; AListIndex: Integer): Boolean;
@@ -2837,13 +2859,8 @@ end;
 
 procedure TMainForm.CloseProjectClick(Sender: TObject);
 begin
-  // Offene Notizen sichern, Projekt schließen und zur Startliste zurück
-  if Assigned(FProject) then
-  begin
-    PersistCurrentNotes;
-    PersistProjectNotes;
-    SaveProject;
-  end;
+  // Offene Notizen sichern, Tagesbackup aktualisieren und zur Startliste zurück
+  BackupCurrentProjectOnClose;
   FSelectedIndex := -1;
   ItemListBox.ItemIndex := -1;
   FreeAndNil(FProject);
@@ -3436,6 +3453,7 @@ begin
   try
     PersistCurrentNotes;
     SaveProject;
+    EnsureDailyZipBackup(True);
     if Assigned(FSettings) then
       TSettingsStore.Save(FSettings);
   except

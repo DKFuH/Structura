@@ -13,6 +13,10 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 - Global project search (Ctrl+F, or "Projektsuche" in the header menu): searches chapter titles, dividers, notes, open/done tasks, and extracted DOCX chapter text. Live results list (chapter · area · snippet); double-click or Enter jumps to the chapter. It is a separate modal — the sidebar stays a pure table of contents
 
+### Changed
+
+- Daily backup now also runs on close: the day's `backup/daily/YYYY-MM-DD.zip` is refreshed when you exit the app, close a project, or switch projects — so the session's work is captured, not just the state at opening
+
 ---
 
 ## [0.6.0] — 2026-06-12
