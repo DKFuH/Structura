@@ -11,7 +11,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ### Fixed
 
-- Project cards lost their text (title/subtitle/chapter count) after returning from a project to the start screen: the cards were rebuilt on an already-visible panel, where the newly created text labels were not repainted (the cover image repainted itself, the labels did not). The cards are now invalidated after a rebuild so their text always shows. The title-size measurement was also made robust (valid canvas + guard)
+- Project cards lost their title and subtitle after returning from a project to the start screen (only the cover and chapter count remained): the title and subtitle labels used `AutoSize := False` with a fixed width, which the LCL fails to paint when the cards are rebuilt on an already-realized panel. Both labels now use `AutoSize := True` with a constrained max width (the same pattern as the chapter-count label, which always rendered correctly), so their text shows reliably on every rebuild. The title still auto-shrinks to fit its length and wraps to two lines when needed
 
 ---
 

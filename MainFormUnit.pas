@@ -3155,15 +3155,16 @@ begin
         end;
     end;
 
-    // Titel — Höhe für bis zu zwei Zeilen, Schriftgröße passt sich der Länge an
+    // Titel — bis zu zwei Zeilen, Schriftgröße passt sich der Länge an.
+    // AutoSize=True + Constraints.MaxWidth: nur so zeichnet das Label beim
+    // erneuten Aufbau zuverlässig (AutoSize=False-Labels bleiben sonst leer).
     TitleLbl := TLabel.Create(Card);
     TitleLbl.Parent := Card;
     TitleLbl.Left := 68;
     TitleLbl.Top := 8;
-    TitleLbl.Width := 204;
-    TitleLbl.Height := 38;
-    TitleLbl.AutoSize := False;
+    TitleLbl.AutoSize := True;
     TitleLbl.WordWrap := True;
+    TitleLbl.Constraints.MaxWidth := 204;
     TitleLbl.Font.Style := [fsBold];
     TitleLbl.Font.Size := FitFontSizeToWidth(Summary.Title, 200, 13, 8, True);
     TitleLbl.Caption := Summary.Title;
@@ -3176,10 +3177,9 @@ begin
     SubLbl.Parent := Card;
     SubLbl.Left := 68;
     SubLbl.Top := 48;
-    SubLbl.Width := 204;
-    SubLbl.Height := 16;
-    SubLbl.AutoSize := False;
+    SubLbl.AutoSize := True;
     SubLbl.WordWrap := False;
+    SubLbl.Constraints.MaxWidth := 204;
     SubLbl.Caption := Summary.Subtitle;
     SubLbl.Font.Color := $00666666;
     SubLbl.Font.Size := 8;
@@ -3201,11 +3201,6 @@ begin
 
     FProjectCards[I] := Card;
     end;
-    // Beim erneuten Aufbau (z. B. Rückkehr aus einem Projekt) zeichnen sich die
-    // neu erzeugten Text-Labels sonst nicht — Karten-Repaint erzwingen.
-    for I := 0 to High(FProjectCards) do
-      if Assigned(FProjectCards[I]) then
-        FProjectCards[I].Invalidate;
   finally
     FolderPaths.Free;
   end;
