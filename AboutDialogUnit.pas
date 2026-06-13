@@ -6,7 +6,7 @@ unit AboutDialogUnit;
 interface
 
 const
-  STRUCTURA_VERSION = '0.8.2';
+  STRUCTURA_VERSION = '0.8.3';
 
 procedure ShowAboutDialog;
 
