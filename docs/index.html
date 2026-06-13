@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Structura – Überblick über große Buchprojekte</title>
+<meta name="description" content="Structura ist eine lokale Windows-App für Sachbuchautoren: Kapitel, Status, Notizen und Fortschritt großer Manuskripte verwalten – ohne die eigenen Dateien aus der Hand zu geben.">
+<meta property="og:title" content="Structura – Überblick über große Buchprojekte">
+<meta property="og:description" content="Lokale Windows-App für Sachbuchautoren: Kapitel, Status, Notizen und Fortschritt verwalten – dateibasiert, ohne Cloud-Zwang.">
+<meta property="og:type" content="website">
+<style>
+  :root{
+    --bg:#faf8f5; --card:#ffffff; --ink:#23201c; --muted:#6b655d;
+    --line:#e7e1d8; --accent:#b05a1e; --accent-ink:#8f4716;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  a{color:var(--accent-ink)}
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px}
+  header{padding:64px 0 40px;text-align:center}
+  .logo{font-weight:800;letter-spacing:-.02em;font-size:clamp(38px,7vw,64px);margin:0}
+  .tagline{font-size:clamp(17px,2.6vw,22px);color:var(--muted);max-width:680px;margin:14px auto 0}
+  .badges{margin-top:18px;color:var(--muted);font-size:14px}
+  .badges span{display:inline-block;margin:0 8px;padding:3px 10px;border:1px solid var(--line);
+    border-radius:999px;background:var(--card)}
+  .cta{margin-top:30px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .btn{display:inline-block;padding:13px 24px;border-radius:10px;text-decoration:none;
+    font-weight:600;border:1px solid transparent}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.primary:hover{background:var(--accent-ink)}
+  .btn.ghost{background:var(--card);color:var(--ink);border-color:var(--line)}
+  .btn.ghost:hover{border-color:var(--accent)}
+  section{padding:38px 0;border-top:1px solid var(--line)}
+  h2{font-size:26px;letter-spacing:-.01em;margin:0 0 22px}
+  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+  .feat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .feat h3{margin:0 0 6px;font-size:17px}
+  .feat p{margin:0;color:var(--muted);font-size:15px}
+  figure{margin:0 0 24px}
+  figure img{width:100%;height:auto;border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 8px 28px rgba(40,30,15,.08);background:var(--card)}
+  figcaption{color:var(--muted);font-size:14px;margin-top:8px;text-align:center}
+  .cols{display:grid;gap:24px;grid-template-columns:1fr 1fr}
+  .cols ul{margin:0;padding-left:20px;color:var(--muted)}
+  .cols li{margin:6px 0}
+  .cols h3{margin:0 0 10px;font-size:18px;color:var(--ink)}
+  .note{background:#fbf3ea;border:1px solid #efd9c2;border-radius:10px;padding:14px 18px;
+    color:#7a5326;font-size:14px}
+  footer{padding:40px 0 60px;color:var(--muted);font-size:14px;text-align:center;
+    border-top:1px solid var(--line)}
+  @media(max-width:640px){.cols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1 class="logo">Structura</h1>
+    <p class="tagline">Macht große Buchprojekte überschaubar – Kapitel, Status, Notizen und
+      Fortschritt, ohne die eigenen Dateien aus der Hand zu geben.</p>
+    <div class="badges">
+      <span>Windows-Desktop</span><span>lokal &amp; dateibasiert</span><span>MIT-Lizenz</span><span>Open Source</span>
+    </div>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/DKFuH/Structura/releases/latest">Download (Windows)</a>
+      <a class="btn ghost" href="https://github.com/DKFuH/Structura">Quellcode auf GitHub</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section>
+    <figure>
+      <img src="screenshots/08_chapter_view.jpg" alt="Kapitelansicht von Structura mit Status und Notizen">
+      <figcaption>Kapitelansicht: Text-Vorschau, Status und Notizen pro Kapitel auf einen Blick.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Wofür Structura gedacht ist</h2>
+    <div class="grid">
+      <div class="feat"><h3>Kapitel im Griff</h3><p>Kapitel und Teil-Trenner anlegen, per Drag-and-Drop neu ordnen – die Struktur bleibt jederzeit sichtbar.</p></div>
+      <div class="feat"><h3>Status &amp; Fortschritt</h3><p>Jedes Kapitel hat einen Status. Wortzahl und Normseiten zeigen, wie weit das Manuskript ist.</p></div>
+      <div class="feat"><h3>Notizen als Markdown</h3><p>Projekt- und Kapitelnotizen liegen als schlichte Markdown-Dateien – lesbar auch ohne die App.</p></div>
+      <div class="feat"><h3>Mit deinem Editor</h3><p>Kapitel öffnen in Word, LibreOffice oder TextMaker. Structura bearbeitet die DOCX nicht selbst.</p></div>
+      <div class="feat"><h3>Text-Vorschau</h3><p>Eine schnelle Vorschau des Kapiteltexts aus der DOCX – ohne ein Office-Programm starten zu müssen.</p></div>
+      <div class="feat"><h3>Export</h3><p>Alle Kapitel zu einem Gesamtdokument zusammenführen, wenn das Manuskript steht.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Deine Dateien bleiben deine Dateien</h2>
+    <p>Jedes Projekt ist ein ganz normaler Ordner auf der Festplatte: <code>structura.json</code> für die
+      Struktur, <code>chapters/</code> für die Kapitel, <code>notes/</code> für Notizen, dazu
+      <code>backup/</code>, <code>preview/</code> und <code>export/</code>. Kein Cloud-Zwang, kein
+      Datenbankformat, nichts, das dich einsperrt – auch ohne Structura bleibt alles lesbar.</p>
+    <figure>
+      <img src="screenshots/01_welcome.jpg" alt="Startbildschirm von Structura">
+      <figcaption>Start: vorhandene Projekte werden im Projektordner automatisch gefunden.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="cols">
+      <div>
+        <h3>Was Structura ist</h3>
+        <ul>
+          <li>ein lokales Cockpit für kapitelbasierte Buchprojekte</li>
+          <li>ein dateibasierter Organizer, der außerhalb der App lesbar bleibt</li>
+          <li>ein Begleiter zu Word, LibreOffice oder TextMaker</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Was Structura nicht ist</h3>
+        <ul>
+          <li>kein DOCX-Editor</li>
+          <li>kein Cloud-Sync-Dienst</li>
+          <li>keine Mehrbenutzer-Plattform</li>
+          <li>kein pixelgenauer DOCX/PDF-Renderer</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Loslegen</h2>
+    <p>Auf der <a href="https://github.com/DKFuH/Structura/releases/latest">Releases-Seite</a> die aktuelle
+      <code>Structura-vX.X.X-windows-x64.zip</code> laden, irgendwo entpacken,
+      <code>Structura.exe</code> starten. Kein Installer.</p>
+    <p class="note"><strong>Hinweis zu Windows SmartScreen:</strong> Da Structura nicht kommerziell
+      signiert ist, kann beim ersten Start eine Warnung erscheinen. Über <em>Weitere Informationen →
+      Trotzdem ausführen</em> startest du die App. Der Quellcode liegt vollständig offen, falls du prüfen
+      möchtest, was du ausführst.</p>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    Structura · MIT-Lizenz · © 2025 Daniel Klas ·
+    <a href="https://github.com/DKFuH/Structura">github.com/DKFuH/Structura</a>
+  </div>
+</footer>
+</body>
+</html>
