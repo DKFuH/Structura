@@ -137,6 +137,7 @@ type
     function CreateBackupCopy(const AAbsoluteFileName: string): Boolean;
     procedure EnsureDailyZipBackup(AForceUpdate: Boolean = False);
     procedure BackupCurrentProjectOnClose;
+    procedure MaybeCheckForUpdateOnClose;
     function RenameChapterFile(AItem: TStructuraItem; AListIndex: Integer): Boolean;
     function RenumberChapterFiles: Boolean;
     function ChapterWordCount(AItem: TStructuraItem): Integer;
@@ -250,7 +251,7 @@ uses
   ProjectStore, ProjectDialogUnit, ElementDialogUnit, DocumentWorkflow,
   DocxPreview, SettingsStore, SettingsDialogUnit, FirstRunWizardUnit,
   ImportProjectDialogUnit, AboutDialogUnit, ReviewDialogUnit, MarkdownPreview,
-  ExportDialogUnit, SearchDialogUnit, ProjectPropsDialogUnit;
+  ExportDialogUnit, SearchDialogUnit, ProjectPropsDialogUnit, UpdateCheckUnit;
 
 function NormalizeStoredPathForCompare(const APath: string): string;
 begin
@@ -3870,6 +3871,40 @@ begin
   end;
 end;
 
+procedure TMainForm.MaybeCheckForUpdateOnClose;
+var
+  Today, LatestTag, Url: string;
+begin
+  if not Assigned(FSettings) then
+    Exit;
+  // Höchstens einmal pro Tag prüfen — der Tag wird sofort gemerkt, damit auch
+  // ein erfolgloser Versuch (offline) nicht beim nächsten Schließen wiederholt.
+  Today := FormatDateTime('yyyy-mm-dd', Now);
+  if FSettings.LastUpdateCheck = Today then
+    Exit;
+  FSettings.LastUpdateCheck := Today;
+  try
+    TSettingsStore.Save(FSettings);
+  except
+    // Speichern des Datums ist unkritisch — Update-Check trotzdem versuchen.
+  end;
+
+  if not FetchLatestRelease(LatestTag, Url) then
+    Exit;
+  if not IsNewerVersion(LatestTag, STRUCTURA_VERSION) then
+    Exit;
+  // Dieselbe Version nicht erneut anbieten, wenn der Dialog schon einmal kam.
+  if SameText(NormalizeVersion(LatestTag), NormalizeVersion(FSettings.DismissedUpdateVersion)) then
+    Exit;
+
+  ShowUpdateAvailableDialog(LatestTag, STRUCTURA_VERSION, Url);
+  FSettings.DismissedUpdateVersion := LatestTag;
+  try
+    TSettingsStore.Save(FSettings);
+  except
+  end;
+end;
+
 procedure TMainForm.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
   CanClose := True;
@@ -3886,6 +3921,10 @@ begin
       MessageDlg('Speichern fehlgeschlagen', E.Message, mtError, [mbOK], 0);
     end;
   end;
+  // Nach dem sicheren Speichern: dezenter Update-Check (blockiert dank kurzer
+  // Timeouts den Shutdown nicht spürbar; bei Fehler/offline passiert nichts).
+  if CanClose then
+    MaybeCheckForUpdateOnClose;
 end;
 
 end.

@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added
+
+- Update check against GitHub releases: when closing the app (at most once per day), Structura quietly queries the latest published release. If a newer version exists, a one-time dialog offers "Zur Download-Seite" (opens the release page) or "Später". The same version is not shown again. Uses Windows WinINet (no extra SSL libraries to ship) with short timeouts, so a missing connection or slow network never blocks shutdown
+
 ### Fixed
 
 - Project cards lost their title and subtitle after returning from a project to the start screen (only the cover and chapter count remained): the title and subtitle labels used `AutoSize := False` with a fixed width, which the LCL fails to paint when the cards are rebuilt on an already-realized panel. Both labels now use `AutoSize := True` with a constrained max width (the same pattern as the chapter-count label, which always rendered correctly), so their text shows reliably on every rebuild. The title still auto-shrinks to fit its length and wraps to two lines when needed

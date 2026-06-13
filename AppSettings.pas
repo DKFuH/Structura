@@ -39,6 +39,8 @@ type
     ChapterNumberDigits: Integer; // Stellen der Kapitelnummer im Dateinamen (1..3)
     DailyBackupKeepDays: Integer; // Tagesbackups älter als X Tage werden gelöscht
     NormpageChars: Integer;       // Zeichen pro Normseite (1500 oder 1800)
+    LastUpdateCheck: string;      // 'yyyy-mm-dd' des letzten Update-Checks (max. 1x/Tag)
+    DismissedUpdateVersion: string; // zuletzt im Dialog gezeigte Version (nicht erneut nerven)
     constructor Create;
     destructor Destroy; override;
     procedure Clear;
@@ -141,6 +143,8 @@ begin
   ChapterNumberDigits := 2;
   DailyBackupKeepDays := 14;
   NormpageChars := 1500;
+  LastUpdateCheck := '';
+  DismissedUpdateVersion := '';
   FWorkflowButtons.Clear;
   FRecentProjects.Clear;
 end;
@@ -162,6 +166,8 @@ begin
   ChapterNumberDigits := Source.ChapterNumberDigits;
   DailyBackupKeepDays := Source.DailyBackupKeepDays;
   NormpageChars := Source.NormpageChars;
+  LastUpdateCheck := Source.LastUpdateCheck;
+  DismissedUpdateVersion := Source.DismissedUpdateVersion;
 
   for I := 0 to Source.RecentProjectCount - 1 do
     FRecentProjects.Add(Source.RecentProjects[I]);
@@ -283,6 +289,8 @@ begin
   Result.Add('chapterNumberDigits', ChapterNumberDigits);
   Result.Add('dailyBackupKeepDays', DailyBackupKeepDays);
   Result.Add('normpageChars', NormpageChars);
+  Result.Add('lastUpdateCheck', LastUpdateCheck);
+  Result.Add('dismissedUpdateVersion', DismissedUpdateVersion);
   Recent := TJSONArray.Create;
   for I := 0 to FRecentProjects.Count - 1 do
     Recent.Add(FRecentProjects[I]);
@@ -317,6 +325,8 @@ begin
   NormpageChars := AObject.Get('normpageChars', 1500);
   if (NormpageChars <> 1500) and (NormpageChars <> 1800) then
     NormpageChars := 1500;
+  LastUpdateCheck := AObject.Get('lastUpdateCheck', '');
+  DismissedUpdateVersion := AObject.Get('dismissedUpdateVersion', '');
 
   RecentData := AObject.Find('recentProjects');
   if RecentData is TJSONArray then
