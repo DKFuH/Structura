@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- Project cards lost their text (title/subtitle/chapter count) after returning from a project to the start screen: the cards were rebuilt on an already-visible panel, where the newly created text labels were not repainted (the cover image repainted itself, the labels did not). The cards are now invalidated after a rebuild so their text always shows. The title-size measurement was also made robust (valid canvas + guard)
+
+---
+
 ## [0.8.2] — 2026-06-12
 
 ### Added

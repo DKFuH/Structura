@@ -2995,15 +2995,24 @@ begin
     Exit;
   Bmp := TBitmap.Create;
   try
-    if ABold then
-      Bmp.Canvas.Font.Style := [fsBold];
-    for Pt := AMaxPt downto AMinPt do
-    begin
-      Bmp.Canvas.Font.Size := Pt;
-      if Bmp.Canvas.TextWidth(AText) <= AMaxWidth then
-        Exit(Pt);
+    try
+      Bmp.SetSize(8, 8);   // gültiger Canvas — sonst wirft TextWidth
+      if ABold then
+        Bmp.Canvas.Font.Style := [fsBold];
+      Result := AMinPt;
+      for Pt := AMaxPt downto AMinPt do
+      begin
+        Bmp.Canvas.Font.Size := Pt;
+        if Bmp.Canvas.TextWidth(AText) <= AMaxWidth then
+        begin
+          Result := Pt;
+          Break;
+        end;
+      end;
+    except
+      // Messung gescheitert: ruhig die Maximalgröße nehmen, nie abbrechen
+      Result := AMaxPt;
     end;
-    Result := AMinPt;
   finally
     Bmp.Free;
   end;
@@ -3192,6 +3201,11 @@ begin
 
     FProjectCards[I] := Card;
     end;
+    // Beim erneuten Aufbau (z. B. Rückkehr aus einem Projekt) zeichnen sich die
+    // neu erzeugten Text-Labels sonst nicht — Karten-Repaint erzwingen.
+    for I := 0 to High(FProjectCards) do
+      if Assigned(FProjectCards[I]) then
+        FProjectCards[I].Invalidate;
   finally
     FolderPaths.Free;
   end;
