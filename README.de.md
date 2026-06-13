@@ -33,6 +33,8 @@ Eine Schritt-für-Schritt-Anleitung gibt es in [`docs/first-steps.md`](docs/firs
 
 ![Willkommensbildschirm](docs/screenshots/01_welcome.jpg)
 
+![Projektübersicht](docs/screenshots/06_project_overview.jpg)
+
 ![Neues-Projekt-Dialog](docs/screenshots/05_new_project.jpg)
 
 ![Kapitelansicht](docs/screenshots/08_chapter_view.jpg)
