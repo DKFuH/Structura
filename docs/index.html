@@ -39,6 +39,10 @@
   .feat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
   .feat h3{margin:0 0 6px;font-size:17px}
   .feat p{margin:0;color:var(--muted);font-size:15px}
+  .shots{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  .shot{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .shot h3{margin:0 0 10px;font-size:17px}
+  .shot p{margin:8px 0 0;color:var(--muted);font-size:14px}
   figure{margin:0 0 24px}
   figure img{width:100%;height:auto;border:1px solid var(--line);border-radius:12px;
     box-shadow:0 8px 28px rgba(40,30,15,.08);background:var(--card)}
@@ -96,15 +100,58 @@
   </section>
 
   <section>
+    <h2>Vom Start bis zum ersten Projekt</h2>
+    <div class="shots">
+      <div class="shot">
+        <h3>Startbildschirm</h3>
+        <img src="screenshots/01_welcome.jpg" alt="Startbildschirm von Structura mit Eule und Projektliste">
+        <p>Direkter Einstieg mit zuletzt geöffneten Projekten und klaren Aktionen für neues Projekt, Öffnen und Import.</p>
+      </div>
+      <div class="shot">
+        <h3>Einrichtungs-Assistent</h3>
+        <img src="screenshots/02_wizard_welcome.jpg" alt="Willkommensschritt des Einrichtungs-Assistenten">
+        <p>Der erste Start führt Schritt für Schritt durch die Grundkonfiguration statt den Nutzer allein zu lassen.</p>
+      </div>
+      <div class="shot">
+        <h3>Projektordner festlegen</h3>
+        <img src="screenshots/03_wizard_folder.jpg" alt="Assistent zum Festlegen des Projektordners">
+        <p>Structura bleibt dateibasiert: Der Stammordner wird bewusst gewählt und später automatisch gescannt.</p>
+      </div>
+      <div class="shot">
+        <h3>Programme erkennen</h3>
+        <img src="screenshots/04_wizard_done.jpg" alt="Abschluss des Einrichtungs-Assistenten mit erkannter Office-Software">
+        <p>Word, LibreOffice und TextMaker können erkannt und später in den Einstellungen angepasst werden.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Im Projekt arbeiten</h2>
+    <div class="shots">
+      <div class="shot">
+        <h3>Neues Projekt anlegen</h3>
+        <img src="screenshots/05_new_project.jpg" alt="Dialog zum Anlegen eines neuen Projekts mit Titel, Autor und Coverbild">
+        <p>Titel, Untertitel, Autor, Hauptordner und optionales Cover werden direkt im Projekt gespeichert.</p>
+      </div>
+      <div class="shot">
+        <h3>Kapitel oder Trenner hinzufügen</h3>
+        <img src="screenshots/07_add_element.jpg" alt="Dialog zum Hinzufügen eines Kapitels oder Teil-Trenners">
+        <p>Die Buchstruktur bleibt sauber: Kapitel und Teil-Trenner werden getrennt behandelt und klar benannt.</p>
+      </div>
+      <div class="shot">
+        <h3>Kapitel bearbeiten</h3>
+        <img src="screenshots/08_chapter_view.jpg" alt="Kapitelansicht von Structura mit Status, Aufgaben, Notizen und Text-Vorschau">
+        <p>Alles Wichtige an einem Ort: Bearbeitungsstatus, Aufgabenliste, Notizen und Vorschau des Kapiteltexts.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
     <h2>Deine Dateien bleiben deine Dateien</h2>
     <p>Jedes Projekt ist ein ganz normaler Ordner auf der Festplatte: <code>structura.json</code> für die
       Struktur, <code>chapters/</code> für die Kapitel, <code>notes/</code> für Notizen, dazu
       <code>backup/</code>, <code>preview/</code> und <code>export/</code>. Kein Cloud-Zwang, kein
       Datenbankformat, nichts, das dich einsperrt – auch ohne Structura bleibt alles lesbar.</p>
-    <figure>
-      <img src="screenshots/01_welcome.jpg" alt="Startbildschirm von Structura">
-      <figcaption>Start: vorhandene Projekte werden im Projektordner automatisch gefunden.</figcaption>
-    </figure>
   </section>
 
   <section>
